@@ -1,0 +1,784 @@
+/* =========================================
+   LAYOUT E SIDEBAR
+   ========================================= */
+   .page-layout {
+    display: flex;
+    min-height: 100vh; /* permite expandir além da altura da tela */
+    background: #f0f2f5;
+    font-family: 'Roboto', sans-serif;
+  }
+  
+  .sidebar {
+    width: 250px;
+    background: linear-gradient(135deg, #0a2236 0%, #2a5298 100%);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .sidebar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(rgba(255, 255, 255, 0.05), transparent);
+    pointer-events: none;
+  }
+  
+  .sidebar-header {
+    margin-bottom: 40px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 20px;
+    position: relative;
+  }
+  
+  .sidebar-header::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 50%;
+    height: 2px;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.3), transparent);
+  }
+  
+  .account-info {
+    margin-bottom: 10px;
+    font-size: 16px;
+    font-weight: 500;
+  }
+  
+  .menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .menu li {
+    margin: 8px 0;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .menu li:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(5px);
+  }
+  
+  .menu li.active {
+    background: rgba(255, 255, 255, 0.15);
+    font-weight: 500;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .menu li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 3px;
+    background: #fff;
+    transform: scaleY(0);
+    transition: transform 0.2s ease;
+  }
+  
+  .menu li:hover::before,
+  .menu li.active::before {
+    transform: scaleY(1);
+  }
+  
+  .menu ul li {
+    transition: background-color 0.3s ease;
+  }
+  
+  .menu ul li:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .menu ul li.active {
+    background-color: rgba(255, 255, 255, 0.2);
+    font-weight: 500;
+  }
+  
+  /* =========================================
+     BOTÕES GERAIS
+     ========================================= */
+  .logout-button,
+  .save-button,
+  .delete-button,
+  .delete-all-button,
+  .export-button {
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+    font-size: 14px; /* ajustado para ficar consistente */
+  }
+  
+  .logout-button {
+    background: #e74c3c;
+    color: #fff;
+    padding: 8px 12px;
+  }
+  .logout-button:hover {
+    background: #c0392b;
+  }
+  
+  .save-button {
+    background: #5151E5;
+    color: #fff;
+    padding: 12px 20px;
+    font-size: 16px;
+  }
+  .save-button:hover {
+    background: #3b3bd8;
+  }
+  
+  .delete-button {
+    background: #e74c3c;
+    color: #fff;
+    padding: 6px 10px;
+  }
+  .delete-button:hover {
+    background: #c0392b;
+  }
+  
+  .delete-all-button {
+    background: #e74c3c;
+    color: #fff;
+    padding: 8px 16px;
+  }
+  .delete-all-button:hover {
+    background: #c0392b;
+  }
+  
+  .export-button {
+    background: #aaa;
+    color: #fff;
+    padding: 8px 16px;
+  }
+  .export-button:hover {
+    background: #888;
+  }
+  
+  /* =========================================
+     BIPAGEM WRAPPER / MAIN
+     ========================================= */
+  .bipagem-wrapper {
+    flex: 1;
+    margin: 40px;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 80px); /* Altura máxima considerando margens */
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+  }
+  
+  .bipagem-wrapper::-webkit-scrollbar {
+    width: 10px;
+  }
+  
+  .bipagem-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 8px;
+    margin: 5px;
+  }
+  
+  .bipagem-wrapper::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 8px;
+    border: 2px solid #f1f1f1;
+    transition: background-color 0.3s ease;
+  }
+  
+  .bipagem-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #666;
+  }
+  
+  .bipagem-main {
+    flex: 1;
+    padding: 20px;
+  }
+  
+  /* =========================================
+     FORMULÁRIOS / INPUTS
+     ========================================= */
+  .bipagem-input-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .bipagem-input-container input[type="text"],
+  .bipagem-input-container input[type="date"],
+  .bipagem-input-container select {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+  }
+  
+  .bipagem-input-container input[type="text"]:focus,
+  .bipagem-input-container input[type="date"]:focus,
+  .bipagem-input-container select:focus {
+    border-color: #5151E5;
+    outline: none;
+  }
+  
+  /* =========================================
+     TABELAS GERAIS
+     ========================================= */
+  .table-container {
+    width: 100%;
+    max-height: 600px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    scroll-behavior: smooth;
+    position: relative; /* Add this */
+  }
+  
+  .table-container::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .table-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+  
+  .table-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+  }
+  
+  .table-container::-webkit-scrollbar-thumb:hover {
+    background: #666;
+  }
+  
+  .bipagem-table {
+    width: 100%;
+    border-collapse: collapse;
+    position: relative;
+  }
+  
+  .bipagem-table thead {
+    background: #f8f8f8;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .bipagem-table th,
+  .bipagem-table td {
+    padding: 12px;
+    border: 1px solid #eee;
+    text-align: center;
+    font-size: 16px;
+    vertical-align: middle;
+  }
+  
+  .bipagem-table thead th {
+    background: #f8f8f8;
+    position: sticky;
+    top: 0;
+    border-bottom: 2px solid #ddd;
+  }
+  
+  /* Opcional: Adicionar uma transição suave na sombra */
+  .bipagem-table thead::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -4px;
+    height: 4px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.1), transparent);
+  }
+  
+  /* =========================================
+     BIPAGEM TABLE SECTION
+     ========================================= */
+  .bipagem-table-section h2 {
+    margin-bottom: 15px;
+    font-size: 24px;
+    color: #333;
+    text-align: left;
+  }
+  
+  /* =========================================
+     HISTORY SEARCH E FILTROS
+     ========================================= */
+  .history-search-container {
+    margin-bottom: 15px;
+  }
+  
+  .history-search-container input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+  }
+  
+  /* Contêiner principal dos filtros de histórico */
+  .history-filters-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    background: #f7f7f7;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    align-items: flex-end;
+  }
+  
+  /* Grupo individual de filtro (label + input/select) */
+  .history-filter-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 160px;
+  }
+  
+  .history-filter-group label {
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 4px;
+  }
+  
+  .history-filter-group input[type="text"],
+  .history-filter-group input[type="date"],
+  .history-filter-group select {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+  }
+  
+  /* Ações (Excluir Todos / Exportar) à direita */
+  .history-filters-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 10px;
+  }
+  
+  /* =========================================
+     DASHBOARD (PAINEL DE BIPS)
+     ========================================= */
+  .dashboard-container {
+    width: 100%;
+    min-height: min-content;
+    padding: 20px;
+  }
+  
+  .dashboard-controls {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    margin-bottom: 20px;
+  }
+  
+  .dashboard-controls label {
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+  }
+  
+  .dashboard-controls input[type="date"] {
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .dashboard-summary {
+    margin-bottom: 20px;
+    font-size: 18px;
+  }
+  
+  .dashboard-chart {
+    width: 100%;
+    height: 300px;
+  }
+  
+  /* =========================================
+     MODAL (PERFIL)
+     ========================================= */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  
+  .modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    position: relative;
+  }
+  
+  .close-button {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+  }
+  
+  .profile-details p {
+    margin: 10px 0;
+    font-size: 16px;
+  }
+  
+  /* =========================================
+     BOTÃO CONFIGURAÇÕES (ENGRENAGEM)
+     ========================================= */
+  .settings-button {
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    margin-left: 8px;
+    padding: 0;
+  }
+  
+  .settings-button svg {
+    width: 20px;
+    height: 20px;
+  }
+
+/* =========================================
+   SCROLLBAR STYLING
+   ========================================= */
+.pagination-button {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background: #f0f0f0;
+}
+
+.pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.expand-button {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  margin-left: 5px;
+  padding: 2px 5px;
+}
+
+.dtf-records-row {
+  background-color: #f8f9fa;
+}
+
+.dtf-records-container {
+  padding: 15px;
+}
+
+.dtf-records-table {
+  width: 100%;
+  margin-top: 10px;
+  border-collapse: collapse;
+}
+
+.dtf-records-table th,
+.dtf-records-table td {
+  padding: 8px;
+  border: 1px solid #ddd;
+  font-size: 0.9em;
+}
+
+.dtf-records-table th {
+  background-color: #e9ecef;
+  font-weight: 500;
+}
+
+/* Grid de cards com scroll horizontal quando necessário */
+.marketplace-grid-container {
+  width: 100%;
+  overflow-x: auto;
+  margin: 20px 0;
+  padding-bottom: 10px;
+  scrollbar-width: thin;
+}
+
+/* Estilização da scrollbar horizontal */
+.marketplace-grid-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.marketplace-grid-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.marketplace-grid-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+  border: 2px solid #f1f1f1;
+}
+
+.marketplace-grid-container::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+/* Ajuste para dispositivos móveis */
+@media (max-width: 768px) {
+  .bipagem-wrapper {
+    margin: 20px;
+    max-height: calc(100vh - 40px);
+  }
+  
+  .dashboard-container {
+    padding: 15px;
+  }
+}
+
+/* =========================================
+   DASHBOARD MARKETPLACES
+   ========================================= */
+.dashboard-container {
+  padding: 2rem;
+  background: linear-gradient(120deg, #f6f8fc 0%, #e9f0f7 100%);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.08);
+}
+
+.marketplace-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.marketplace-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.marketplace-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(52, 152, 219, 0.15);
+}
+
+.marketplace-logo {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 50%;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
+
+.marketplace-card:hover .marketplace-logo {
+  transform: scale(1.1);
+}
+
+.marketplace-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.marketplace-info {
+  text-align: center;
+  width: 100%;
+}
+
+.marketplace-info h3 {
+  color: #1a237e;
+  margin: 1rem 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.marketplace-count {
+  display: block;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #3498db;
+  margin: 0.5rem 0;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.1);
+}
+
+.marketplace-label {
+  display: block;
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Grid responsivo para diferentes tamanhos de tela */
+@media (min-width: 1400px) {
+  .marketplace-grid {
+    grid-template-columns: repeat(6, 1fr); /* 6 cards por linha em telas grandes */
+  }
+}
+
+@media (max-width: 1399px) and (min-width: 1100px) {
+  .marketplace-grid {
+    grid-template-columns: repeat(3, 1fr); /* 3 cards por linha em telas médias */
+  }
+}
+
+@media (max-width: 1099px) and (min-width: 768px) {
+  .marketplace-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 cards por linha em telas pequenas */
+  }
+}
+
+@media (max-width: 767px) {
+  .marketplace-grid {
+    grid-template-columns: 1fr; /* 1 card por linha em telas muito pequenas */
+  }
+  
+  .marketplace-card {
+    padding: 1rem;
+  }
+  
+  .marketplace-logo {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .marketplace-info h3 {
+    font-size: 1.2rem;
+  }
+  
+  .marketplace-count {
+    font-size: 2rem;
+  }
+}
+
+/* Estatísticas do topo */
+.top-stats-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+}
+
+.top-stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.top-stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(52, 152, 219, 0.15);
+}
+
+.top-stat-date {
+  font-size: 1rem;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.top-stat-value {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #3498db;
+  margin: 0.5rem 0;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.1);
+}
+
+.top-stat-label {
+  font-size: 1.2rem;
+  color: #1a237e;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Ajuste responsivo para telas menores */
+@media (max-width: 768px) {
+  .top-stats-container {
+    grid-template-columns: 1fr;
+  }
+
+  .top-stat-card {
+    padding: 1rem;
+  }
+
+  .top-stat-value {
+    font-size: 2.5rem;
+  }
+
+  .top-stat-label {
+    font-size: 1rem;
+  }
+}
+
+/* Atualização do container do dashboard para incluir o novo layout */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+

@@ -1,0 +1,326 @@
+/* Importação das fontes */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+/* Estilos base */
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Container principal com scroll */
+.dashboard-container {
+  padding: 2rem;
+  background: linear-gradient(120deg, #f6f8fc 0%, #e9f0f7 100%);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.08);
+  margin: 20px;
+  max-height: calc(100vh - 40px); /* Altura máxima do viewport menos margens */
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Estilização da scrollbar principal */
+.dashboard-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.dashboard-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.dashboard-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Estatísticas rápidas no topo */
+.painel-quick-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.quick-stat {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.quick-stat:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(52, 152, 219, 0.15);
+}
+
+.quick-stat .label {
+  font-size: 1.2rem;
+  color: #1a237e;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 1rem;
+}
+
+.quick-stat .value {
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: #3498db;
+  margin: 0.5rem 0;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.1);
+}
+
+.quick-stat .date {
+  font-size: 1rem;
+  color: #64748b;
+  margin-top: 0.5rem;
+}
+
+/* Estilos dos cards de marketplace */
+.marketplace-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.marketplace-icon {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease;
+}
+
+.marketplace-stat:hover .marketplace-icon {
+  transform: scale(1.1);
+}
+
+.marketplace-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+/* Grid fixo para marketplaces */
+.marketplace-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr); /* 6 colunas fixas para os marketplaces */
+  gap: 1.5rem;
+  min-width: min-content; /* Garante que o grid não encolha demais */
+  padding: 0.5rem; /* Espaço para sombras */
+}
+
+/* Container do grid de marketplaces com scroll horizontal */
+.marketplace-grid-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  scrollbar-width: thin;
+}
+
+/* Estilização da scrollbar horizontal */
+.marketplace-grid-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.marketplace-grid-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.marketplace-grid-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.marketplace-grid-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Ajuste dos cards para largura fixa */
+.marketplace-card {
+  width: 280px; /* Largura fixa para os cards */
+  background: white;
+  padding: 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Controles do dashboard */
+.dashboard-controls {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 3rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.dashboard-controls label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a237e;
+}
+
+.dashboard-controls input[type="date"] {
+  padding: 0.8rem 1.2rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+}
+
+.dashboard-controls input[type="date"]:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52,152,219,0.2);
+}
+
+.dashboard-controls button {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2.5rem;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.dashboard-controls button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(52,152,219,0.3);
+}
+
+/* Estilos para os controles de atualização */
+.refresh-button {
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.refresh-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+}
+
+.refresh-select {
+  padding: 0.8rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.refresh-select:focus {
+  border-color: #2ecc71;
+  box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.2);
+  outline: none;
+}
+
+/* Sumário e gráfico */
+.dashboard-summary {
+  background: white;
+  padding: 1.5rem 2rem;
+  border-radius: 16px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-summary p {
+  color: #2c3e50;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.dashboard-chart {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  margin-top: 2rem;
+}
+
+/* Media query para telas menores */
+@media (max-width: 1600px) {
+  .marketplace-grid {
+    grid-template-columns: repeat(3, 1fr); /* 3 colunas em telas menores */
+  }
+}
+
+@media (max-width: 992px) {
+  .marketplace-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 colunas em telas ainda menores */
+  }
+}
+
+@media (max-width: 768px) {
+  .marketplace-grid {
+    grid-template-columns: repeat(1, 1fr); /* 1 coluna em telas móveis */
+  }
+  
+  .marketplace-card {
+    width: 100%; /* Cards ocupam toda a largura em telas móveis */
+  }
+  
+  .painel-quick-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-stat {
+    padding: 1.5rem;
+  }
+
+  .quick-stat .value {
+    font-size: 2.5rem;
+  }
+
+  .quick-stat .label {
+    font-size: 1rem;
+  }
+}
+
+.clickable {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.top-stat-card.clickable:hover,
+.marketplace-card.clickable:hover {
+  transform: translateY(-5px);
+}
+
+.top-stat-card.clickable:active,
+.marketplace-card.clickable:active {
+  transform: translateY(0);
+}

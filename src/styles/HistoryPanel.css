@@ -1,0 +1,405 @@
+.dtf-records-row {
+  animation: slideDown 0.3s ease-out;
+  overflow: hidden;
+}
+
+@keyframes slideDown {
+  from {
+    max-height: 0;
+    opacity: 0;
+  }
+  to {
+    max-height: 500px;
+    opacity: 1;
+  }
+}
+
+.expand-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 5px;
+  transition: transform 0.3s ease;
+}
+
+.expand-button.expanded {
+  transform: rotate(180deg);
+}
+
+.dtf-records-container {
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  margin: 10px;
+}
+
+/* Animação para os resultados da busca */
+.bipagem-table tbody tr {
+  animation: fadeIn 0.3s ease-out;
+  transition: all 0.3s ease;
+}
+
+.bipagem-table tbody tr:hover {
+  background-color: #f5f5f5;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animação para o loading */
+.loading-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+/* Estilo para destacar resultado da busca */
+.search-highlight {
+  background-color: #fff3cd;
+  transition: background-color 0.3s ease;
+}
+
+/* =========================================
+   HISTORY PANEL STYLES
+   ========================================= */
+
+/* Container principal com tema claro e moderno */
+.history-panel {
+  width: 100%;
+  min-height: min-content;
+  padding: 30px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+/* Seção de filtros com visual mais limpo */
+.history-filters-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  background: #f8fafc;
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  align-items: end;
+}
+
+.history-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-filter-group label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Inputs com visual mais moderno */
+.history-filter-group input[type="text"],
+.history-filter-group input[type="date"],
+.history-filter-group select {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #334155;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.history-filter-group input:focus,
+.history-filter-group select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  outline: none;
+}
+
+/* Ações (Excluir Todos / Exportar) */
+.history-filters-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+}
+
+/* Tabela com visual mais clean */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+}
+
+.table-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+.bipagem-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 800px;
+  position: relative;
+}
+
+.bipagem-table thead {
+  background: #f8f8f8;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bipagem-table th,
+.bipagem-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+  border: 1px solid #eee;
+  font-size: 14px;
+}
+
+.bipagem-table thead th {
+  background: #f8fafc;
+  padding: 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.bipagem-table tbody td {
+  padding: 16px;
+  font-size: 14px;
+  color: #334155;
+  border-bottom: 1px solid #e2e8f0;
+  transition: background 0.2s ease;
+}
+
+.bipagem-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+/* Registros DTF */
+.dtf-records-row {
+  background-color: #f8f9fa;
+}
+
+.dtf-records-container {
+  padding: 15px;
+}
+
+.dtf-records-table {
+  width: 100%;
+  margin-top: 10px;
+  border-collapse: collapse;
+}
+
+.dtf-records-table th,
+.dtf-records-table td {
+  padding: 8px;
+  border: 1px solid #ddd;
+  font-size: 0.9em;
+}
+
+.dtf-records-table th {
+  background-color: #e9ecef;
+  font-weight: 500;
+}
+
+/* Botões */
+.expand-button {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  margin-left: 5px;
+  padding: 2px 5px;
+  transition: transform 0.3s ease;
+}
+
+.expand-button.expanded {
+  transform: rotate(180deg);
+}
+
+/* Paginação minimalista e elegante */
+.pagination-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.pagination-button {
+  padding: 0.5rem 1rem;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background: #e9ecef;
+}
+
+.pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.page-number {
+  font-weight: 500;
+}
+
+.pagination-loading {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Loading com visual suave */
+.loading-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 30px;
+  background: rgba(248, 250, 252, 0.8);
+  backdrop-filter: blur(4px);
+  border-radius: 12px;
+}
+
+.loading-indicator p {
+  color: #2563eb;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.loading-indicator p::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 3px solid #3498db;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Responsividade melhorada */
+@media (max-width: 768px) {
+  .history-filters-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .history-panel {
+    padding: 16px;
+  }
+  
+  .table-container {
+    margin: 0 -16px;
+    border-radius: 0;
+  }
+
+  .history-filter-group {
+    width: 100%;
+  }
+
+  .history-filters-actions {
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 15px;
+  }
+}
+
+.filter-title {
+  background: #f8f9fa;
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border-left: 4px solid #2563eb;
+}
+
+.filter-title h2 {
+  margin: 0;
+  color: #1e3a8a;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.clickable {
+  position: relative;
+}
+
+.clickable::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.1);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.clickable:hover::after {
+  opacity: 1;
+}

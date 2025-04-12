@@ -1,0 +1,19 @@
+@import './base/variables.css';
+@import './base/reset.css';
+@import './components/Layout.css';
+@import './components/Dashboard.css';
+@import './components/Common.css';
+
+/* Estilos globais */
+body {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--background);
+  color: var(--text-primary);
+}
+
+* {
+  box-sizing: border-box;
+}

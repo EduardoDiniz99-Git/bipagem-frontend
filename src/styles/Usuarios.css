@@ -1,0 +1,94 @@
+.users-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.users-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.search-container {
+  width: 100%;
+  max-width: 400px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.users-table th,
+.users-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.users-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+}
+
+.status {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status.active {
+  background: #e3fcef;
+  color: #00a650;
+}
+
+.status.inactive {
+  background: #fee7e7;
+  color: #d32f2f;
+}
+
+.delete-button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  background: #ff4444;
+  color: white;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.delete-button:hover {
+  background: #cc0000;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.no-results {
+  text-align: center;
+  color: #666;
+  padding: 20px;
+}
+
+.table-container {
+  overflow-x: auto;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
