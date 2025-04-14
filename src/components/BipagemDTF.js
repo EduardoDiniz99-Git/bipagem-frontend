@@ -5,6 +5,9 @@ import BipagemPanel from './BipagemPanel';
 const BipagemDTF = () => {
   const [inputCode, setInputCode] = useState('');
   const [scannedItems, setScannedItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [bipagemData, setBipagemData] = useState(null);
+  const [currentVerifications, setCurrentVerifications] = useState(0);
 
   const handleKeyDown = async (e) => {
     if (e.key !== "Enter") return;
@@ -18,7 +21,7 @@ const BipagemDTF = () => {
         return;
       }
 
-      // Check if code exists in bipagens
+      // Verifica se o código existe em bipagens
       const querySnapshot = await db.collection("bipagens")
         .where("code", "==", code)
         .get();
@@ -29,14 +32,32 @@ const BipagemDTF = () => {
         return;
       }
 
-      // Check if code was already scanned by any DTF user
-      for (const doc of querySnapshot.docs) {
-        const dtfRecords = await doc.ref.collection("dtf_records").get();
-        if (!dtfRecords.empty) {
-          alert("Este código já foi verificado por DTF!");
-          setInputCode("");
-          return;
-        }
+      // Busca dados do documento original
+      const originalBip = querySnapshot.docs[0];
+      const originalData = originalBip.data();
+      setBipagemData(originalData);
+
+      // Verifica quantidade total de itens e verificações existentes
+      const totalItems = originalData.quantity || 1;
+      const dtfRecordsSnapshot = await originalBip.ref
+        .collection("dtf_records")
+        .where('verificationType', '==', 'dtf')
+        .get();
+
+      const existingVerifications = dtfRecordsSnapshot.size;
+      setCurrentVerifications(existingVerifications);
+
+      if (existingVerifications >= totalItems) {
+        alert(`Todos os ${totalItems} itens já foram verificados por DTF!`);
+        setInputCode("");
+        return;
+      }
+
+      // Verifica se o código já está na lista local
+      if (scannedItems.some(item => item.code === code)) {
+        alert("Este código já foi bipado nesta sessão!");
+        setInputCode("");
+        return;
       }
 
       const timestamp = new Date().toLocaleString("pt-BR");
@@ -45,29 +66,18 @@ const BipagemDTF = () => {
         time: timestamp,
         userEmail: auth.currentUser.email,
         userRole: "DTF",
-        status: "Verificado DTF"
+        status: "Pendente",
+        bipId: originalBip.id,
+        totalItems,
+        nextItemNumber: existingVerifications + 1
       };
 
-      // Add to Firebase
-      const originalBip = querySnapshot.docs[0];
-      await db.collection("bipagens")
-        .doc(originalBip.id)
-        .collection("dtf_records")
-        .add({
-          userId: auth.currentUser.uid,
-          userEmail: auth.currentUser.email,
-          userRole: "DTF",
-          timestamp: new Date(),
-          status: "Verificado DTF"
-        });
-
-      // Update local state
       setScannedItems(prev => [newItem, ...prev]);
       setInputCode("");
 
     } catch (err) {
-      console.error("Erro ao salvar bipagem:", err);
-      alert("Erro ao salvar bipagem: " + err.message);
+      console.error("Erro ao verificar código:", err);
+      alert("Erro ao verificar código: " + err.message);
     }
   };
 
@@ -77,39 +87,50 @@ const BipagemDTF = () => {
       return;
     }
 
-    try {
-      // Save all items
-      for (const item of scannedItems) {
-        await db.collection("bipagens")
-          .where("code", "==", item.code)
-          .get()
-          .then(async (querySnapshot) => {
-            if (querySnapshot.empty) {
-              console.warn(`Código não encontrado: ${item.code}`);
-              return;
-            }
+    setLoading(true);
 
-            const originalBip = querySnapshot.docs[0];
-            await db.collection("bipagens")
-              .doc(originalBip.id)
-              .collection("dtf_records")
-              .add({
-                userId: auth.currentUser.uid,
-                userEmail: auth.currentUser.email,
-                userRole: "DTF",
-                timestamp: new Date(),
-                status: "Verificado DTF"
-              });
+    try {
+      const batch = db.batch();
+
+      for (const item of scannedItems) {
+        const dtfRef = db.collection("bipagens")
+          .doc(item.bipId)
+          .collection("dtf_records")
+          .doc();
+
+        batch.set(dtfRef, {
+          userId: auth.currentUser.uid,
+          userEmail: auth.currentUser.email,
+          userRole: "DTF",
+          timestamp: new Date(),
+          status: "Verificado DTF",
+          verificationType: 'dtf',
+          itemNumber: item.nextItemNumber,
+          totalItems: item.totalItems
+        });
+
+        // Se for o último item, atualiza o documento principal
+        if (item.nextItemNumber === item.totalItems) {
+          const bipagemRef = db.collection("bipagens").doc(item.bipId);
+          batch.update(bipagemRef, {
+            dtfVerified: true,
+            status: 'DTF Verificado',
+            lastUpdated: new Date()
           });
+        }
       }
 
-      // Clear local state after saving
+      await batch.commit();
       setScannedItems([]);
-      alert("✅ Registros salvos com sucesso!");
+      setBipagemData(null);
+      setCurrentVerifications(0);
+      alert(`✅ ${scannedItems.length} verificações salvas com sucesso!`);
 
     } catch (err) {
       console.error("Erro ao salvar registros:", err);
       alert("❌ Erro ao salvar registros: " + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -128,16 +149,31 @@ const BipagemDTF = () => {
           value={inputCode}
           onChange={(e) => setInputCode(e.target.value)}
           onKeyDown={handleKeyDown}
+          disabled={loading}
           autoFocus
         />
         <button 
           className="save-button"
           onClick={handleSaveAll}
-          disabled={scannedItems.length === 0}
+          disabled={scannedItems.length === 0 || loading}
         >
-          Salvar Todos ({scannedItems.length})
+          {loading ? "Salvando..." : `Salvar Todos (${scannedItems.length})`}
         </button>
       </div>
+
+      {bipagemData?.quantity > 1 && (
+        <div className="verification-progress">
+          <div className="progress-text">
+            Progresso: {currentVerifications} de {bipagemData.quantity} itens verificados
+          </div>
+          <div className="progress-bar">
+            <div 
+              className="progress-fill"
+              style={{ width: `${(currentVerifications / bipagemData.quantity) * 100}%` }}
+            ></div>
+          </div>
+        </div>
+      )}
 
       <section className="bipagem-table-section">
         <h2>Etiquetas Bipadas ({scannedItems.length})</h2>
@@ -165,6 +201,7 @@ const BipagemDTF = () => {
                     <button
                       className="delete-button"
                       onClick={() => handleDelete(idx)}
+                      disabled={loading}
                     >
                       Excluir
                     </button>

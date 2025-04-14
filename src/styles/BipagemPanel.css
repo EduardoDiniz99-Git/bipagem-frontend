@@ -1,0 +1,9 @@
+.bipagem-table td:nth-child(3) {
+  text-align: center;
+  font-weight: 600;
+  color: #4f46e5;
+}
+
+.bipagem-table th:nth-child(3) {
+  text-align: center;
+}

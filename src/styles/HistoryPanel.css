@@ -15,22 +15,79 @@
 }
 
 .expand-button {
-  background: none;
+  background: transparent;
   border: none;
+  width: 24px;
+  height: 24px;
+  padding: 2px;
+  margin-left: 8px;
+  border-radius: 4px;
   cursor: pointer;
-  padding: 0 5px;
-  transition: transform 0.3s ease;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+}
+
+.expand-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #333;
+}
+
+.expand-button svg {
+  transition: transform 0.2s ease;
+}
+
+.expand-button.expanded svg {
+  transform: rotate(-180deg);
+}
+
+/* Efeito de pulso ao expandir */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
 }
 
 .expand-button.expanded {
-  transform: rotate(180deg);
+  color: #4f46e5;
+  animation: pulse 0.3s ease;
+}
+
+/* Estilo quando o mouse passa por cima da linha */
+.bipagem-table tr:hover .expand-button {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .expand-button {
+    width: 20px;
+    height: 20px;
+  }
+
+  .expand-button svg {
+    width: 14px;
+    height: 14px;
+  }
 }
 
 .dtf-records-container {
-  padding: 15px;
-  background-color: #f8f9fa;
+  padding: 16px;
+  background-color: #f5f5f5;
   border-radius: 4px;
   margin: 10px;
+}
+
+.dtf-records-container h4 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: #f8fafc;
+  border-radius: 6px;
 }
 
 /* Animação para os resultados da busca */
@@ -95,60 +152,266 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
-/* Seção de filtros com visual mais limpo */
+/* Container dos filtros */
 .history-filters-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 20px;
-  background: #f8fafc;
   padding: 24px;
+  background: #ffffff;
   border-radius: 12px;
-  margin-bottom: 30px;
-  align-items: end;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  margin-bottom: 24px;
 }
 
+/* Grupo de filtros padronizado */
 .history-filter-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
+/* Labels padronizados */
 .history-filter-group label {
   font-size: 13px;
   font-weight: 500;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: #374151;
 }
 
-/* Inputs com visual mais moderno */
-.history-filter-group input[type="text"],
-.history-filter-group input[type="date"],
+/* Inputs e Selects padronizados */
+.history-filter-group input:not([type="date"]),
 .history-filter-group select {
-  padding: 10px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  width: 4cm;
+  height: 1cm;
+  padding: 0 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
   font-size: 14px;
-  color: #334155;
-  background: white;
+  color: #1f2937;
+  background: #fff;
   transition: all 0.2s ease;
 }
 
-.history-filter-group input:focus,
-.history-filter-group select:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+/* Estilização específica para inputs de data */
+.history-filter-group input[type="date"] {
+  width: 4cm;  /* Um pouco mais largo para acomodar o calendário */
+  height: 0,3cm;
+  padding: 0 8px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #1f2937;
+  background: #fff;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+/* Estilização do ícone do calendário */
+.history-filter-group input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  padding: 4px;
+  margin-right: -4px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.history-filter-group input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Estados de foco para inputs de data */
+.history-filter-group input[type="date"]:focus {
   outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
-/* Ações (Excluir Todos / Exportar) */
-.history-filters-actions {
-  margin-left: auto;
+/* Campo de código (primeiro grupo) */
+.history-filter-group:first-child {
+  grid-column: 1 / -1;
   display: flex;
-  gap: 10px;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 20px;
 }
 
-/* Tabela com visual mais clean */
+/* Campo de código (primeiro grupo) também padronizado */
+.history-filter-group:first-child input {
+  width: 5cm;
+  height: 0.5cm;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .history-filters-container {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+
+  .history-filter-group input,
+  .history-filter-group select,
+  .history-filter-group:first-child input {
+    width: 100%; /* Em telas menores, ocupa toda largura disponível */
+    height: 0,5cm;
+  }
+}
+
+.history-filter-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+/* Grid para marketplace, loja e status */
+.history-filter-row:last-of-type {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.history-filter-group button {
+  height: 38px;
+  padding: 0 20px;
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.history-filter-group button:hover:not(:disabled) {
+  background: #4338ca;
+}
+
+.history-filter-group button:disabled {
+  background: #e5e7eb;
+  cursor: not-allowed;
+}
+
+.history-filters-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.clear-filters-button {
+  height: 38px;
+  padding: 0 16px;
+  background: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.clear-filters-button:hover {
+  background: #4b5563;
+}
+
+/* Estilo para quando os filtros estiverem ativos */
+.clear-filters-button.active {
+  background: #4f46e5;
+}
+
+.clear-filters-button.active:hover {
+  background: #4338ca;
+}
+
+.history-filters-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.delete-all-button,
+.export-button {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 120px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-all-button {
+  background: #ef4444;
+  color: white;
+  border: none;
+}
+
+.delete-all-button:hover {
+  background: #dc2626;
+}
+
+.export-button {
+  background: #10b981;
+  color: white;
+  border: none;
+}
+
+.export-button:hover {
+  background: #059669;
+}
+
+@media (max-width: 1024px) {
+  .history-filter-row,
+  .history-filter-row:last-of-type {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .history-filters-container {
+    padding: 16px;
+  }
+
+  .history-filter-row,
+  .history-filter-row:last-of-type {
+    grid-template-columns: 1fr;
+  }
+
+  .history-filter-group:first-child {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .history-filter-group:first-child input {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .history-filters-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .delete-all-button,
+  .export-button,
+  .history-filters-actions button {
+    width: 100%;
+  }
+}
+
 .table-container {
   width: 100%;
   overflow-x: auto;
@@ -234,10 +497,6 @@
   background-color: #f8f9fa;
 }
 
-.dtf-records-container {
-  padding: 15px;
-}
-
 .dtf-records-table {
   width: 100%;
   margin-top: 10px;
@@ -256,19 +515,70 @@
   font-weight: 500;
 }
 
+.dtf-records-table td:nth-child(4) {
+  font-weight: 500;
+  color: #4f46e5;
+  text-align: center;
+}
+
 /* Botões */
 .expand-button {
-  background: none;
+  background: transparent;
   border: none;
-  color: #666;
+  width: 24px;
+  height: 24px;
+  padding: 2px;
+  margin-left: 8px;
+  border-radius: 4px;
   cursor: pointer;
-  margin-left: 5px;
-  padding: 2px 5px;
-  transition: transform 0.3s ease;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+}
+
+.expand-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #333;
+}
+
+.expand-button svg {
+  transition: transform 0.2s ease;
+}
+
+.expand-button.expanded svg {
+  transform: rotate(-180deg);
+}
+
+/* Efeito de pulso ao expandir */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
 }
 
 .expand-button.expanded {
-  transform: rotate(180deg);
+  color: #4f46e5;
+  animation: pulse 0.3s ease;
+}
+
+/* Estilo quando o mouse passa por cima da linha */
+.bipagem-table tr:hover .expand-button {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .expand-button {
+    width: 20px;
+    height: 20px;
+  }
+
+  .expand-button svg {
+    width: 14px;
+    height: 14px;
+  }
 }
 
 /* Paginação minimalista e elegante */
@@ -402,4 +712,191 @@
 
 .clickable:hover::after {
   opacity: 1;
+}
+
+.verification-checkout {
+  background-color: #e8f5e9;
+}
+
+.verification-status.checkout {
+  background-color: #dcfce7;
+  color: #166534;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.verification-dtf {
+  background-color: #e3f2fd;
+}
+
+.verification-status.dtf {
+  background-color: #fef3c7;
+  color: #92400e;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+/* Estilos adicionais para a tabela de registros */
+.dtf-records-container {
+  padding: 16px;
+  background-color: #f5f5f5;
+  margin-top: 8px;
+  border-radius: 4px;
+}
+
+.dtf-records-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.dtf-records-table th,
+.dtf-records-table td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.dtf-records-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}
+
+/* Status badges */
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+  text-align: center;
+  min-width: 90px;
+}
+
+.status-badge.pendente {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
+.status-badge.dtf {
+  background-color: #cce5ff;
+  color: #004085;
+  border: 1px solid #b8daff;
+}
+
+.status-badge.enviado {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+/* Adicione junto aos outros estilos de status */
+.status-atrasado {
+  background-color: rgba(220, 38, 38, 0.1);
+}
+
+.status-badge.atrasado {
+  background-color: #dc2626;
+  color: white;
+}
+
+/* Estilo para a linha da tabela baseado no status */
+.bipagem-table tr.status-pendente {
+  background-color: #fffbf2;
+}
+
+.bipagem-table tr.status-dtf {
+  background-color: #f5f9ff;
+}
+
+.bipagem-table tr.status-enviado {
+  background-color: #f8fff9;
+}
+
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-right: 20px;
+}
+
+.sortable-header:hover {
+  background-color: #f5f5f5;
+}
+
+.sort-arrow {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: #666;
+}
+
+.sort-arrow.asc {
+  color: #4CAF50;
+}
+
+.sort-arrow.desc {
+  color: #f44336;
+}
+
+th {
+  position: relative;
+  white-space: nowrap;
+  transition: background-color 0.2s;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #dc2626;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #dc2626;
+}
+
+.checkbox-label:hover {
+  color: #b91c1c;
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+  padding: 10px;
+}
+
+.pagination-button {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-button:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.pagination-button:not(:disabled):hover {
+  background-color: #f0f0f0;
+}
+
+.page-info {
+  font-weight: 500;
+  color: #666;
 }

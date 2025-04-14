@@ -1,5 +1,6 @@
 // src/components/DashboardPanel.js
 import React, { useState, useEffect } from "react";
+import "../styles/DashboardPanel.css";
 import firebase, { db } from "../firebase";
 import {
   LineChart,
@@ -15,6 +16,18 @@ import { useNavigate } from 'react-router-dom';
 const DashboardPanel = ({ setActiveMenu }) => {
   const navigate = useNavigate();
 
+  // Adicione estas funções utilitárias no início do componente
+  const getFirstDayOfMonth = () => {
+    const date = new Date();
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
+  };
+
+  const getLastDayOfMonth = () => {
+    const date = new Date();
+    const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    return `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+  };
+
   // Função utilitária para formatar data como "YYYY-MM-DD"
   const formatDate = (date) => {
     const yyyy = date.getFullYear();
@@ -29,6 +42,13 @@ const DashboardPanel = ({ setActiveMenu }) => {
       month: '2-digit',
       year: 'numeric'
     }).format(date);
+  };
+
+  // Adicione esta função utilitária para calcular data de 15 dias atrás
+  const getDateFrom15DaysAgo = () => {
+    const date = new Date();
+    date.setDate(date.getDate() - 15);
+    return formatDate(date);
   };
 
   // Data atual com hora zerada
@@ -59,8 +79,64 @@ const DashboardPanel = ({ setActiveMenu }) => {
     'Magalu': 0
   });
 
+  // Adicione após os outros estados
+  const [sentOrdersCount, setSentOrdersCount] = useState(0);
+
+  // Adicione junto aos outros estados
+  const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
+
+  // Adicione após o objeto marketplaceCounts
+  const [storeCounts, setStoreCounts] = useState({});
+
   // Adicione no início do componente, após os estados
   const [refreshInterval, setRefreshInterval] = useState(30000); // 30 segundos
+
+  // Adicione este estado após os outros estados
+  const [openDropdown, setOpenDropdown] = useState(null);
+
+  // Adicione após a definição de marketplaceOrder
+  const storesByMarketplace = {
+    "Mercado Livre": [
+      'LUISCARLOS',
+      'Vanio',
+      'JMGarcia',
+      'João Mota Novo',
+      'Edna',
+      'Nagila',
+      'Eguinaldo',
+      'Daiane',
+    ],
+    "Shopee": [
+      'StreetCulture',
+      'JM Styles',
+      'Maravs Confecções',
+      'Style Haven',
+      'PlazaShop',
+      'Gin Tropical',
+      'T-Shirt',
+      'Now Kids',
+      'FHC',
+      'Close Friends',
+      'Oversized Store',
+    ],
+    "Shein": [
+      'Maravs',
+      'JM Styles',
+      'Out Fit'
+    ],
+    "Netshoes": [
+      'Maravs',
+      'Gin Tropical',
+      'Daniel Bueno',
+      'Padrão93',
+    ],
+    "Amazon": [
+      'Maravs',
+    ],
+    "Magalu": [
+      'Luis Carlos'
+    ]
+  };
 
   // Busca assim que o painel carrega
   useEffect(() => {
@@ -79,12 +155,20 @@ const DashboardPanel = ({ setActiveMenu }) => {
     fetchBipsDeHoje();
     fetchAmanhaShipping();
     fetchMarketplaceCounts();
+    fetchSentOrders(); // Adicione esta linha
+    fetchPendingOrders(); // Adicione esta linha
+    fetchStoreCounts(); // Adicione esta linha
+    fetchLateOrders(); // Adicione esta linha
 
     // Configurar atualização automática
     const interval = setInterval(() => {
       fetchBipsDeHoje();
       fetchAmanhaShipping();
       fetchMarketplaceCounts();
+      fetchSentOrders(); // Adicione esta linha
+      fetchPendingOrders(); // Adicione esta linha
+      fetchStoreCounts(); // Adicione esta linha
+      fetchLateOrders(); // Adicione esta linha
     }, refreshInterval);
 
     // Limpar intervalo quando o componente for desmontado
@@ -159,7 +243,8 @@ const DashboardPanel = ({ setActiveMenu }) => {
 
       snap.docs.forEach(doc => {
         const data = doc.data();
-        if (counts[data.marketplace]) {
+        // Verifica se o status é Pendente ou não existe
+        if ((!data.status || data.status === 'Pendente' || data.status === '') && counts[data.marketplace]) {
           counts[data.marketplace].add(data.code);
         }
       });
@@ -173,6 +258,123 @@ const DashboardPanel = ({ setActiveMenu }) => {
       setMarketplaceCounts(marketplaceTotals);
     } catch (err) {
       console.error("Erro ao buscar contagens por marketplace:", err);
+    }
+  };
+
+  // Adicione após as outras funções de fetch
+  const fetchSentOrders = async () => {
+    try {
+      const todayStr = formatDate(new Date());
+      
+      // Busca pedidos com status 'Enviado' de hoje
+      const snap = await db.collection("bipagens")
+        .where("shippingDate", "==", todayStr)
+        .where("status", "==", "Enviado")
+        .get();
+
+      // Filtra códigos únicos
+      const uniqueCodes = new Set();
+      snap.docs.forEach(doc => {
+        uniqueCodes.add(doc.data().code);
+      });
+
+      setSentOrdersCount(uniqueCodes.size);
+    } catch (err) {
+      console.error("Erro ao buscar pedidos enviados:", err);
+    }
+  };
+
+  const fetchPendingOrders = async () => {
+    try {
+      const todayStr = formatDate(new Date());
+      
+      // Busca todos os pedidos de hoje sem filtrar por status inicialmente
+      const snap = await db.collection("bipagens")
+        .where("shippingDate", "==", todayStr)
+        .get();
+
+      // Filtra códigos únicos que estão pendentes (não tem status ou status é Pendente)
+      const uniqueCodes = new Set();
+      snap.docs.forEach(doc => {
+        const data = doc.data();
+        // Considera como pendente se não tiver status ou se o status for Pendente
+        if (!data.status || data.status === 'Pendente' || data.status === '') {
+          uniqueCodes.add(data.code);
+        }
+      });
+
+      setPendingOrdersCount(uniqueCodes.size);
+    } catch (err) {
+      console.error("Erro ao buscar pedidos pendentes:", err);
+    }
+  };
+
+  // Modifique a função fetchStoreCounts
+  const fetchStoreCounts = async () => {
+    try {
+      const todayStr = formatDate(new Date());
+      const snap = await db.collection("bipagens")
+        .where("shippingDate", "==", todayStr)
+        .get();
+
+      const counts = {};
+
+      snap.docs.forEach(doc => {
+        const data = doc.data();
+        if (!data.status || data.status === 'Pendente' || data.status === '') {
+          const store = data.store || 'Não identificado';
+          const marketplace = data.marketplace || 'Não identificado';
+          const storeKey = `${store}_${marketplace}`; // Chave única combinando loja e marketplace
+
+          if (!counts[storeKey]) {
+            counts[storeKey] = {
+              store,
+              marketplace,
+              codes: new Set()
+            };
+          }
+          counts[storeKey].codes.add(data.code);
+        }
+      });
+
+      // Converte para o formato final
+      const storeTotals = Object.values(counts).reduce((acc, { store, marketplace, codes }) => {
+        acc[store] = {
+          count: codes.size,
+          marketplace
+        };
+        return acc;
+      }, {});
+
+      setStoreCounts(storeTotals);
+    } catch (err) {
+      console.error("Erro ao buscar contagens por loja:", err);
+    }
+  };
+
+  // Adicione o novo estado
+  const [lateOrdersCount, setLateOrdersCount] = useState(0);
+
+  // Adicione a nova função para buscar pedidos atrasados
+  const fetchLateOrders = async () => {
+    try {
+      const today = formatDate(new Date());
+      const snap = await db.collection("bipagens")
+        .where("shippingDate", "<", today)
+        .get();
+
+      // Filtra códigos únicos que ainda estão pendentes
+      const uniqueCodes = new Set();
+      snap.docs.forEach(doc => {
+        const data = doc.data();
+        if (!data.status || data.status === 'Pendente' || data.status === '') {
+          uniqueCodes.add(data.code);
+        }
+      });
+
+      setLateOrdersCount(uniqueCodes.size);
+    } catch (err) {
+      console.error("Erro ao buscar pedidos atrasados:", err);
     }
   };
 
@@ -231,12 +433,12 @@ const DashboardPanel = ({ setActiveMenu }) => {
 
   // Ordem específica dos marketplaces
   const marketplaceOrder = [
-    'Amazon', 
-    'Netshoes', 
-    'Mercado Livre',
     'Shopee',
+    'Mercado Livre',
     'Shein',
-    'Magalu'
+    'Netshoes', 
+    'Magalu',
+    'Amazon'
   ];
 
   // Adicione antes do return
@@ -246,51 +448,92 @@ const DashboardPanel = ({ setActiveMenu }) => {
     fetchMarketplaceCounts();
   };
 
-  const handleCardClick = (type, marketplace = null) => {
-    // Ativa o menu de histórico
-    setActiveMenu("history");
-
-    const today = formatDate(new Date());
-    const tomorrow = formatDate(new Date(Date.now() + 86400000));
-
-    // Define os filtros baseado no tipo do card
-    let filters = {};
-    
+  const handleCardClick = (type, marketplace = null, store = null) => {
+    const today = formatDate(new Date()); // Formato YYYY-MM-DD
+  
+    let filters = {
+      marketplaceFilter: '-',
+      statusFilter: '-',
+      storeFilter: '-',
+      shippingDateFilter: '',
+      startDate: '',
+      endDate: '',
+      title: ''
+    };
+  
     switch(type) {
-      case 'today':
+      case 'sent':
         filters = {
-          startDate: today,
-          endDate: today,
-          marketplaceFilter: '-'
+          ...filters,
+          statusFilter: 'Enviado',
+          shippingDateFilter: today,
+          title: 'Pedidos Embalados Hoje'
         };
         break;
-      
-      case 'tomorrow':
+  
+      case 'pending':
         filters = {
-          startDate: tomorrow,
-          endDate: tomorrow,
-          marketplaceFilter: '-'
+          ...filters,
+          statusFilter: 'Pendente',
+          shippingDateFilter: today,
+          title: 'Pedidos a Enviar Hoje'
         };
         break;
-      
+  
       case 'marketplace':
         filters = {
-          startDate: today,
-          endDate: today,
-          marketplaceFilter: marketplace
+          ...filters,
+          marketplaceFilter: marketplace,
+          statusFilter: 'Pendente',
+          shippingDateFilter: today,
+          title: `Pedidos ${marketplace} Hoje`
         };
         break;
+  
+      case 'store':
+        filters = {
+          ...filters,
+          marketplaceFilter: marketplace,
+          storeFilter: store,
+          statusFilter: 'Pendente',
+          shippingDateFilter: today,
+          title: `Pedidos ${store} Hoje`
+        };
+        break;
+  
+      case 'late':
+        filters = {
+          ...filters,
+          statusFilter: 'Atrasado',
+          endDate: today,
+          title: 'Pedidos Atrasados'
+        };
+        break;
+
+      case 'tomorrow':
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = formatDate(tomorrow);
+        
+        filters = {
+          ...filters,
+          statusFilter: 'Pendente',
+          shippingDateFilter: tomorrowStr, // Data de amanhã no formato YYYY-MM-DD
+          title: 'Pedidos para Amanhã'
+        };
+        break;
+  
+      // Mantém os outros cases existentes...
     }
-
-    // Navega e passa os filtros via state
-    navigate('/', { 
-      state: { 
-        activeMenu: 'history',
-        filters 
-      }
-    });
+  
+    // Atualiza o menu e salva os filtros
+    setActiveMenu("history");
+    localStorage.setItem('lastHistoryFilters', JSON.stringify(filters));
+    
+    // Força atualização da página com os novos filtros
+    window.location.href = '/?menu=history';
   };
-
+  
   return (
     <div className="dashboard-container">
       <div className="top-stats-container">
@@ -313,14 +556,40 @@ const DashboardPanel = ({ setActiveMenu }) => {
           <span className="top-stat-value">{tomorrowShippingCount}</span>
           <span className="top-stat-label">Pedidos para Amanhã</span>
         </div>
+        
+        <div 
+          className="top-stat-card clickable sent-orders"
+          onClick={() => handleCardClick('sent')}
+        >
+          <span className="top-stat-date">{formatDateDisplay(new Date())}</span>
+          <span className="top-stat-value">{sentOrdersCount}</span>
+          <span className="top-stat-label">Pedidos Embalados</span>
+        </div>
+
+        <div 
+          className="top-stat-card clickable pending-orders"
+          onClick={() => handleCardClick('pending')}
+        >
+          <span className="top-stat-date">{formatDateDisplay(new Date())}</span>
+          <span className="top-stat-value">{pendingOrdersCount}</span>
+          <span className="top-stat-label">Pedidos a Enviar</span>
+        </div>
+
+        <div 
+          className="top-stat-card clickable late-orders"
+          onClick={() => handleCardClick('late')}
+        >
+          <span className="top-stat-date">{formatDateDisplay(new Date())}</span>
+          <span className="top-stat-value">{lateOrdersCount}</span>
+          <span className="top-stat-label">Pedidos Atrasados</span>
+        </div>
       </div>
 
       {/* Container com scroll horizontal para o grid de marketplaces */}
-      <div className="marketplace-grid-container">
-        <div className="marketplace-grid">
-          {marketplaceOrder.map(marketplace => (
+      <div className="marketplace-section">
+        {marketplaceOrder.map(marketplace => (
+          <div key={marketplace} className="marketplace-block">
             <div 
-              key={marketplace} 
               className="marketplace-card clickable"
               onClick={() => handleCardClick('marketplace', marketplace)}
             >
@@ -330,11 +599,29 @@ const DashboardPanel = ({ setActiveMenu }) => {
               <div className="marketplace-info">
                 <h3>{marketplace}</h3>
                 <span className="marketplace-count">{marketplaceCounts[marketplace]}</span>
-                <span className="marketplace-label">pedidos hoje</span>
+                <span className="marketplace-label">pendentes hoje</span>
               </div>
             </div>
-          ))}
-        </div>
+
+            <div className="stores-grid">
+              {storesByMarketplace[marketplace].map(store => (
+                <div 
+                  key={`${store}_${marketplace}`}
+                  className="store-card clickable"
+                  onClick={() => handleCardClick('store', marketplace, store)}
+                >
+                  <div className="store-info">
+                    <h4>{store}</h4>
+                    <span className="store-count">
+                      {storeCounts[store]?.marketplace === marketplace ? storeCounts[store]?.count || 0 : 0}
+                    </span>
+                    <span className="store-label">pendentes hoje</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       {totalCount !== null && (

@@ -2,41 +2,139 @@ import React, { useState, useEffect } from "react";
 import { useLocation } from 'react-router-dom';
 import { db, auth } from "../firebase";
 import * as XLSX from "xlsx";
-import "../styles/HistoryPanel.css";
-import '../styles/HistoryPanel.css';
-import '../styles/BipagemCheckout.css';
+import { toast } from 'react-toastify'; // Adiciona esta linha
+import "../styles/HistoryPanel.css"; // Importação do CSS
 
-const HistoryPanel = ({ autoLoad = true }) => {
-  const location = useLocation();
+// Adicione este mapeamento no início do arquivo, junto com as outras constantes
+const storesByMarketplace = {
+  "Mercado Livre": [
+    'LUISCARLOS',
+    'Vanio',
+    'JMGarcia',
+    'João Mota Novo',
+    'Edna',
+    'Nagila',
+    'Eguinaldo',
+    'Daiane',
+  ],
+  "Shopee": [
+    'StreetCulture',
+    'JM Styles',
+    'Maravs Confecções',
+    'Style Haven',
+    'PlazaShop',
+    'Gin Tropical',
+    'JM Styles',
+    'T-Shirt',
+    'Now Kids',
+    'FHC',
+    'Close Friends',
+    'Oversized Store',
+  ],
+  "Shein": [
+    'Maravs',
+    'JM Styles',
+    'Out Fit'
+  ],
+  "Netshoes": [
+    'Maravs',
+    'Gin Tropical',
+    'Daniel Bueno',
+    'Padrão93',
+  ],
+  "Amazon": [
+    'Maravs',
+  ],
+  "Magalu": [
+    'Luis Carlos'
+  ]
+};
+
+const HistoryPanel = ({ autoLoad = true, initialFilters = null }) => {
   // =========================================
   // Estados principais
   // =========================================
-  const [historyItems, setHistoryItems] = useState([]); // Lista de bipagens
-  const [loadingHistory, setLoadingHistory] = useState(false); // Controle de carregamento
-  const [userRole, setUserRole] = useState(''); // Função do usuário (admin ou normal)
-  const [isMounted, setIsMounted] = useState(true); // Controle de componente montado
+  const [historyItems, setHistoryItems] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [isMounted, setIsMounted] = useState(true);
 
   // =========================================
   // Estados de paginação
   // =========================================
+  const PAGE_SIZE = 50;  // Constante para tamanho da página
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 50; // Quantidade de itens por página
-  const [pageCursors, setPageCursors] = useState([]); // Cursores para paginação do Firestore
+  const [lastDoc, setLastDoc] = useState(null);
+  const [firstDoc, setFirstDoc] = useState(null); // Adicione estado para firstDoc
   const [hasNextPage, setHasNextPage] = useState(true);
+  const [pageCursors, setPageCursors] = useState([]); // Adicione estado para pageCursors
+
+  const location = useLocation();
+  // =========================================
+  // Estados principais
+  // =========================================
+  const [userRole, setUserRole] = useState(''); // Função do usuário (admin ou normal)
 
   // =========================================
   // Estados de filtros
   // =========================================
   const [searchTerm, setSearchTerm] = useState(""); // Busca por código
-  const [marketplaceFilter, setMarketplaceFilter] = useState(""); // Filtro de marketplace
-  const [startDate, setStartDate] = useState(getFirstDayOfMonth()); // Data inicial
-  const [endDate, setEndDate] = useState(getLastDayOfMonth()); // Data final
+  const [marketplaceFilter, setMarketplaceFilter] = useState(initialFilters?.marketplaceFilter || '-'); // Filtro de marketplace
+  const [startDate, setStartDate] = useState(''); // Data inicial
+  const [endDate, setEndDate] = useState(''); // Data final
+
+  // Adicione estes estados junto com os outros estados
+  const [shippingDateFilter, setShippingDateFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('-');
+
+  // Adicione as opções de status
+  const statusOptions = [
+    '-',
+    'Pendente',
+    'DTF',
+    'Enviado',
+    'Atrasado'  // Adiciona a opção Atrasado
+  ];
+
+  // Adicione junto aos outros estados no início do componente
+  const [storeFilter, setStoreFilter] = useState('-');
+
+  // Adicione as opções de loja junto às outras constantes
+  const storeOptions = [
+    '-',
+    'LUISCARLOS',
+    'Vanio',
+    'JMGarcia',
+    'João Mota Novo',
+    'Edna',
+    'Nagila',
+    'L A Freitas',
+    'Eguinaldo',
+    'Daiane',
+    'StreetCulture',
+    'JM Styles',
+    'Maravs Confecções',
+    'Style Haven',
+    'PlazaShop',
+    'Gin Tropical',
+    'T-Shirt',
+    'Now Kids',
+    'FHC',
+    'Close Friends',
+    'Oversized Store',
+    'Maravs',
+    'Out Fit',
+    'Padrão93',
+    'Luis Carlos'
+  ];
 
   // =========================================
   // Estados para registros DTF
-  // =========================================
   const [dtfRecords, setDtfRecords] = useState({}); // Registros de verificação DTF
   const [expandedRow, setExpandedRow] = useState(null); // Controle de linha expandida
+
+  // Adicione estes estados no início do componente
+  const [sortField, setSortField] = useState('createdAt');
+  const [sortDirection, setSortDirection] = useState('desc');
 
   // =========================================
   // Funções utilitárias
@@ -107,12 +205,32 @@ const HistoryPanel = ({ autoLoad = true }) => {
 
   useEffect(() => {
     if (location.state?.filters) {
-      const { startDate, endDate, marketplaceFilter } = location.state.filters;
+      const filters = location.state.filters;
+      
+      // Aplica os filtros
+      setStartDate(filters.startDate);
+      setEndDate(filters.endDate);
+      setMarketplaceFilter(filters.marketplaceFilter);
+
+      // Carrega os dados com os novos filtros
+      loadFilteredData();
+      
+      // Limpa o state para não reaplicar os filtros
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
+  // No início do componente, modifique o useEffect que observa os filtros iniciais
+  useEffect(() => {
+    if (location.state?.filters) {
+      const filters = location.state.filters;
       
       // Aplica os filtros recebidos
-      setStartDate(startDate || '');
-      setEndDate(endDate || '');
-      setMarketplaceFilter(marketplaceFilter || '-');
+      if (filters.shippingDateFilter) {
+        setShippingDateFilter(filters.shippingDateFilter);
+      }
+      setMarketplaceFilter(filters.marketplaceFilter || '-');
+      setStatusFilter(filters.statusFilter || '-');
       
       // Carrega os dados com os novos filtros
       loadFilteredData();
@@ -122,69 +240,138 @@ const HistoryPanel = ({ autoLoad = true }) => {
     }
   }, [location.state]);
 
+  useEffect(() => {
+    const savedFilters = JSON.parse(localStorage.getItem('lastHistoryFilters'));
+    
+    if (savedFilters) {
+      if (savedFilters.shippingDateFilter) {
+        setShippingDateFilter(savedFilters.shippingDateFilter);
+      }
+      if (savedFilters.marketplaceFilter) {
+        setMarketplaceFilter(savedFilters.marketplaceFilter);
+      }
+      if (savedFilters.statusFilter) {
+        setStatusFilter(savedFilters.statusFilter);
+      }
+      
+      // Carrega os dados com os novos filtros
+      loadFilteredData();
+    }
+  }, []);
+
+  useEffect(() => {
+    const savedFilters = JSON.parse(localStorage.getItem('lastHistoryFilters'));
+    
+    if (savedFilters) {
+      // Aplica as datas de início e fim
+      if (savedFilters.startDate) {
+        setStartDate(savedFilters.startDate);
+      }
+      if (savedFilters.endDate) {
+        setEndDate(savedFilters.endDate);
+      }
+      
+      // Aplica os outros filtros
+      setMarketplaceFilter(savedFilters.marketplaceFilter || '-');
+      setStatusFilter(savedFilters.statusFilter || '-');
+      setStoreFilter(savedFilters.storeFilter || '-');
+      setShippingDateFilter(savedFilters.shippingDateFilter || '');
+      
+      // Carrega os dados com os novos filtros
+      loadFilteredData();
+    }
+  }, []);
+
   // =========================================
   // Funções de carregamento de dados
   // =========================================
 
-  // Função principal de carregamento com filtros
-  const loadFilteredData = async () => {
-    if (!isMounted) return;
-    setLoadingHistory(true);
+  // Modifique a função loadFilteredData
+const loadFilteredData = async (pageDirection = 'next') => {
+  if (!isMounted) return;
+  setLoadingHistory(true);
 
-    try {
-      let query = db.collection("bipagens");
+  try {
+    let query = db.collection("bipagens");
 
-      // Aplica filtros de data
-      if (startDate && endDate) {
-        const startDateTime = new Date(startDate);
-        startDateTime.setHours(0, 0, 0, 0);
-        
-        const endDateTime = new Date(endDate);
-        endDateTime.setHours(23, 59, 59, 999);
+    // Aplica filtros
+    if (statusFilter && statusFilter !== "-") {
+      query = query.where("status", "==", statusFilter);
+    }
+    if (marketplaceFilter && marketplaceFilter !== "-") {
+      query = query.where("marketplace", "==", marketplaceFilter);
+    }
+    if (storeFilter && storeFilter !== "-") {
+      query = query.where("store", "==", storeFilter);
+    }
 
-        query = query
-          .where("createdAt", ">=", startDateTime)
-          .where("createdAt", "<=", endDateTime);
+    // Ordenação padrão
+    query = query.orderBy("createdAt", "desc");
+
+    // Aplica paginação
+    if (pageDirection === 'next' && lastDoc) {
+      query = query.startAfter(lastDoc);
+    } else if (pageDirection === 'prev' && firstDoc) {
+      query = query.endBefore(firstDoc).limitToLast(PAGE_SIZE);
+    }
+
+    query = query.limit(PAGE_SIZE);
+
+    const snapshot = await query.get();
+    
+    if (snapshot.empty) {
+      setHasNextPage(false);
+      return;
+    }
+
+    // Salva os documentos de referência para paginação
+    setFirstDoc(snapshot.docs[0]);
+    setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+
+    let items = snapshot.docs.map(doc => {
+      const data = doc.data();
+      
+      // Converte data atual para YYYY-MM-DD
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+    
+      // Define o status baseado na data de envio
+      let status = data.status || "Pendente";
+      
+      if (data.shippingDate && (status === "Pendente" || !status)) {
+        // Compara as strings diretamente no formato YYYY-MM-DD
+        if (data.shippingDate < todayStr) {
+          status = "Atrasado";
+        } else {
+          status = "Pendente";
+        }
       }
-
-      // Aplica filtro de marketplace
-      if (marketplaceFilter && marketplaceFilter !== "-") {
-        query = query.where("marketplace", "==", marketplaceFilter);
-      }
-
-      // Ordenação e limite
-      query = query
-        .orderBy("createdAt", "desc")
-        .limit(pageSize);
-
-      const snapshot = await query.get();
-
-      // Mapeia documentos para o formato necessário
-      const items = snapshot.docs.map(doc => ({
-        ...doc.data(),
+    
+      return {
+        ...data,
         id: doc.id,
         uniqueId: doc.id,
-        sequentialId: doc.data().sequentialId || 'N/A',
-        time: doc.data().createdAt?.toDate().toLocaleString("pt-BR") || "-",
-        email: doc.data().userEmail || "-",
-        userRole: doc.data().userRole || "-",
-        shippingDate: doc.data().shippingDate || "-",
-        marketplace: doc.data().marketplace || "-"
-      }));
+        sequentialId: data.sequentialId || 'N/A',
+        time: data.createdAt?.toDate().toLocaleString("pt-BR") || "-",
+        email: data.userEmail || "-",
+        userRole: data.userRole || "-",
+        shippingDate: data.shippingDate || "-",
+        marketplace: data.marketplace || "-",
+        store: data.store || "-",
+        status: status
+      };
+    });
 
-      setHistoryItems(items);
-      setCurrentPage(1);
-      setHasNextPage(items.length === pageSize);
+    setHistoryItems(items);
+    setHasNextPage(snapshot.docs.length === PAGE_SIZE);
 
-    } catch (error) {
-      console.error("Erro ao carregar dados:", error);
-      alert("Erro ao carregar dados: " + error.message);
-    } finally {
-      if (isMounted) {
-        setLoadingHistory(false);
-      }
-    }
-  };
+  } catch (error) {
+    console.error("Erro ao carregar dados:", error);
+    toast.error("Erro ao carregar dados: " + error.message);
+  } finally {
+    setLoadingHistory(false);
+  }
+};
 
   // Add a useEffect to watch filter changes
   useEffect(() => {
@@ -202,7 +389,7 @@ const HistoryPanel = ({ autoLoad = true }) => {
       const snapshot = await db
         .collection("bipagens")
         .orderBy("sequentialId", "desc")
-        .limit(pageSize)
+        .limit(PAGE_SIZE)
         .get();
 
       if (!isMounted) return;
@@ -210,7 +397,7 @@ const HistoryPanel = ({ autoLoad = true }) => {
       const items = snapshot.docs.map(doc => mapDocToItem(doc));
       setHistoryItems(items);
       
-      if (items.length < pageSize) {
+      if (items.length < PAGE_SIZE) {
         setHasNextPage(false);
       }
 
@@ -236,7 +423,7 @@ const HistoryPanel = ({ autoLoad = true }) => {
       let query = db
         .collection("bipagens")
         .orderBy("sequentialId", "desc")
-        .limit(pageSize);
+        .limit(PAGE_SIZE);
 
       if (page > 1 && pageCursors[page - 2]) {
         query = query.startAfter(pageCursors[page - 2]);
@@ -259,7 +446,7 @@ const HistoryPanel = ({ autoLoad = true }) => {
         setPageCursors(prev => [...prev, snap.docs[snap.docs.length - 1]]);
       }
 
-      setHasNextPage(newDocs.length === pageSize);
+      setHasNextPage(newDocs.length === PAGE_SIZE);
       setCurrentPage(page);
 
       // Debug
@@ -276,17 +463,20 @@ const HistoryPanel = ({ autoLoad = true }) => {
     }
   };
 
-  const handleNextPage = () => {
-    if (hasNextPage) {
-      fetchPage(currentPage + 1);
-    }
-  };
+  // Modifique as funções de navegação
+const handleNextPage = () => {
+  if (hasNextPage && !loadingHistory) {
+    setCurrentPage(prev => prev + 1);
+    loadFilteredData('next');
+  }
+};
 
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      fetchPage(currentPage - 1);
-    }
-  };
+const handlePrevPage = () => {
+  if (currentPage > 1 && !loadingHistory) {
+    setCurrentPage(prev => prev - 1);
+    loadFilteredData('prev');
+  }
+};
 
   // Modifique a função de busca global
   const handleGlobalSearch = async () => {
@@ -312,7 +502,8 @@ const HistoryPanel = ({ autoLoad = true }) => {
         email: doc.data().userEmail || "-",
         userRole: doc.data().userRole || "-",
         shippingDate: doc.data().shippingDate || "-",
-        marketplace: doc.data().marketplace || "-"
+        marketplace: doc.data().marketplace || "-",
+        status: doc.data().status || "Pendente" // Adiciona o status
       }));
   
       setHistoryItems(items);
@@ -334,18 +525,41 @@ const HistoryPanel = ({ autoLoad = true }) => {
 
   // Modifique a função mapDocToItem para incluir a verificação de registros DTF
   const mapDocToItem = (doc) => {
-    const d = doc.data();
+    const data = doc.data();
+    let status = 'Pendente';
+  
+    // Primeiro verifica se existe verificação DTF na subcoleção
+    const hasDtfVerification = data.dtfVerified || 
+      (data.verifications && data.verifications.some(v => v.type === 'dtf' || v.userRole === 'DTF'));
+  
+    // Depois verifica verificação de Checkout
+    const hasCheckoutVerification = data.checkoutVerified || 
+      (data.verifications && data.verifications.some(v => v.type === 'checkout' || v.userRole === 'Checkout'));
+  
+    // Define o status baseado nas verificações
+    if (hasCheckoutVerification) {
+      status = 'Enviado';
+    } else if (hasDtfVerification) {
+      status = 'DTF';
+    }
+  
+    // Converte timestamps para datas legíveis
+    const createdAtDate = data.createdAt?.toDate?.();
+    const formattedCreatedAt = createdAtDate ? createdAtDate.toLocaleString("pt-BR") : "-";
+  
     return {
+      ...data,
       id: doc.id,
-      uniqueId: `${doc.id}-${d.sequentialId}`,
-      sequentialId: d.sequentialId || 'N/A', // Inclui o ID sequencial
-      code: d.code,
-      time: d.createdAt ? d.createdAt.toDate().toLocaleString("pt-BR") : "",
-      email: d.userEmail || "-",
-      userRole: d.userRole || "-",
-      shippingDate: d.shippingDate || "-",
-      marketplace: d.marketplace || "-",
-      hasRecords: true // Sempre será true pois verificaremos os registros DTF
+      uniqueId: doc.id,
+      sequentialId: data.sequentialId || 'N/A',
+      time: formattedCreatedAt,
+      email: data.userEmail || "-",
+      userRole: data.userRole || "-",
+      shippingDate: data.shippingDate || "-",
+      marketplace: data.marketplace || "-",
+      status: status,
+      hasCheckout: hasCheckoutVerification,
+      hasDTF: hasDtfVerification
     };
   };
 
@@ -462,121 +676,197 @@ const HistoryPanel = ({ autoLoad = true }) => {
   };
 
   const handleExportXLSX = async () => {
+    if (!startDate || !endDate) {
+      alert("Selecione um período para exportar os dados");
+      return;
+    }
+  
     try {
+      setLoadingHistory(true);
       const exportData = [];
       
-      // Para cada item do histórico
-      for (const item of filteredItems) {
-        // Busca os registros DTF do item
-        const dtfRecordsSnap = await db
-          .collection("bipagens")
-          .doc(item.id)
-          .collection("dtf_records")
-          .where("status", "==", "Verificado DTF")
-          .get();
+      const startDateTime = new Date(startDate);
+      startDateTime.setHours(0, 0, 0, 0);
+      
+      const endDateTime = new Date(endDate);
+      endDateTime.setHours(23, 59, 59, 999);
   
-        const dtfVerifications = dtfRecordsSnap.docs.map(doc => {
-          const data = doc.data();
-          return {
-            dtfTimestamp: data.timestamp?.toDate().toLocaleString("pt-BR") || "-",
-            dtfUser: data.userEmail || "-",
-            dtfStatus: data.status || "-"
+      let query = db.collection("bipagens")
+        .where("createdAt", ">=", startDateTime)
+        .where("createdAt", "<=", endDateTime)
+        .orderBy("createdAt", "desc");
+  
+      const processQuerySnapshot = async (snapshot) => {
+        for (const doc of snapshot.docs) {
+          const item = doc.data();
+          
+          // Busca verificações DTF e Checkout
+          const verificationsSnap = await db
+            .collection("bipagens")
+            .doc(doc.id)
+            .collection("dtf_records")
+            .orderBy("timestamp", "desc")
+            .get();
+  
+          const verifications = verificationsSnap.docs.map(vDoc => {
+            const data = vDoc.data();
+            return {
+              timestamp: data.timestamp?.toDate().toLocaleString("pt-BR") || "-",
+              userEmail: data.userEmail || "-",
+              userRole: data.userRole || "-",
+              status: data.status || "-",
+              type: data.verificationType || "-"
+            };
+          });
+  
+          // Cria o registro base com informações principais
+          const baseRecord = {
+            "Sequencial": item.sequentialId || 'N/A',
+            "Código": item.code || '-',
+            "Data/Hora Criação": item.createdAt?.toDate().toLocaleString("pt-BR") || "-",
+            "Data de Envio": item.shippingDate || "-",
+            "Marketplace": item.marketplace || "-",
+            "Usuário": item.userEmail || "-",
+            "Função": item.userRole || "-",
+            "Status": item.status || "Pendente",
+            "Verificado DTF": item.dtfVerified ? "Sim" : "Não",
+            "Verificado Checkout": item.checkoutVerified ? "Sim" : "Não"
           };
-        });
   
-        // Cria o registro base
-        const baseRecord = {
-          "ID Sequencial": item.sequentialId,
-          "Código": item.code,
-          "Data/Horário Criação": item.time,
-          "Data de Envio": item.shippingDate,
-          "Marketplace": item.marketplace,
-          "Usuário Criação": item.email,
-          "Função Usuário": item.userRole,
-        };
-  
-        if (dtfVerifications.length > 0) {
-          // Adiciona cada verificação DTF como uma linha separada
-          dtfVerifications.forEach((dtf, index) => {
+          // Se houver verificações, adiciona cada uma como uma linha
+          if (verifications.length > 0) {
+            verifications.forEach((v, index) => {
+              exportData.push({
+                ...baseRecord,
+                "Nº Verificação": index + 1,
+                "Data/Hora Verificação": v.timestamp,
+                "Usuário Verificação": v.userEmail,
+                "Tipo Verificação": v.userRole,
+                "Status Verificação": v.status
+              });
+            });
+          } else {
+            // Se não houver verificações, adiciona uma linha com campos vazios
             exportData.push({
               ...baseRecord,
-              "Verificação DTF #": index + 1,
-              "Data/Hora Verificação DTF": dtf.dtfTimestamp,
-              "Usuário DTF": dtf.dtfUser,
-              "Status DTF": dtf.dtfStatus
+              "Nº Verificação": "-",
+              "Data/Hora Verificação": "-",
+              "Usuário Verificação": "-",
+              "Tipo Verificação": "-",
+              "Status Verificação": "-"
             });
-          });
-        } else {
-          // Se não houver verificações DTF, adiciona uma linha com valores vazios
-          exportData.push({
-            ...baseRecord,
-            "Verificação DTF #": "-",
-            "Data/Hora Verificação DTF": "-",
-            "Usuário DTF": "-",
-            "Status DTF": "Não verificado"
-          });
+          }
         }
-      }
+      };
   
-      // Configura a planilha
+      // Processa em lotes
+      let totalDocs = 0;
+      let lastDoc = null;
+      const batchSize = 500;
+  
+      do {
+        let batchQuery = query.limit(batchSize);
+        if (lastDoc) {
+          batchQuery = batchQuery.startAfter(lastDoc);
+        }
+  
+        const snapshot = await batchQuery.get();
+        await processQuerySnapshot(snapshot);
+        
+        totalDocs += snapshot.docs.length;
+        lastDoc = snapshot.docs[snapshot.docs.length - 1];
+  
+        if (totalDocs % 500 === 0) {
+          console.log(`Processados ${totalDocs} registros...`);
+        }
+  
+        if (snapshot.docs.length < batchSize) break;
+      } while (lastDoc);
+  
+      // Configura e gera a planilha
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Bipagens");
   
       // Ajusta largura das colunas
       const colWidths = [
-        { wch: 15 }, // ID Sequencial
-        { wch: 20 }, // Código
-        { wch: 20 }, // Data/Horário Criação
-        { wch: 15 }, // Data de Envio
-        { wch: 15 }, // Marketplace
-        { wch: 25 }, // Usuário Criação
-        { wch: 15 }, // Função Usuário
-        { wch: 15 }, // Verificação DTF #
-        { wch: 20 }, // Data/Hora Verificação DTF
-        { wch: 25 }, // Usuário DTF
-        { wch: 15 }, // Status DTF
+        { wch: 10 },  // Sequencial
+        { wch: 20 },  // Código
+        { wch: 20 },  // Data/Hora Criação
+        { wch: 15 },  // Data de Envio
+        { wch: 15 },  // Marketplace
+        { wch: 25 },  // Usuário
+        { wch: 15 },  // Função
+        { wch: 12 },  // Status
+        { wch: 15 },  // Verificado DTF
+        { wch: 15 },  // Verificado Checkout
+        { wch: 12 },  // Nº Verificação
+        { wch: 20 },  // Data/Hora Verificação
+        { wch: 25 },  // Usuário Verificação
+        { wch: 15 },  // Tipo Verificação
+        { wch: 15 }   // Status Verificação
       ];
       ws['!cols'] = colWidths;
   
-      // Salva o arquivo
-      XLSX.writeFile(wb, `bipagens_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`);
+      // Nome do arquivo com período
+      const fileName = `bipagens_${startDate}_a_${endDate}.xlsx`;
+      XLSX.writeFile(wb, fileName);
   
-      alert("✅ Planilha exportada com sucesso!");
+      alert(`✅ Exportação concluída!\nTotal de registros: ${totalDocs}`);
     } catch (error) {
       console.error("Erro ao exportar planilha:", error);
       alert("❌ Erro ao exportar planilha: " + error.message);
+    } finally {
+      setLoadingHistory(false);
     }
   };
 
-  const fetchDtfRecords = async (bipId) => {
-    try {
-      // Busca registros DTF salvos
-      const records = await db
-        .collection("bipagens")
-        .doc(bipId)
-        .collection("dtf_records")
-        .where("status", "==", "Verificado DTF")
-        .get();
+  // Modifique a função fetchDtfRecords
+const fetchDtfRecords = async (bipId) => {
+  if (!auth.currentUser) return;
 
-      const mappedRecords = records.docs
-        .map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          timestamp: doc.data().timestamp?.toDate().toLocaleString("pt-BR") || "-"
-        }))
-        .sort((a, b) => b.timestamp.localeCompare(a.timestamp)); // Ordenação local
+  try {
+    // Busca o documento principal primeiro para obter a quantidade total de itens
+    const bipDoc = await db.collection("bipagens").doc(bipId).get();
+    const bipData = bipDoc.data();
+    const totalItems = bipData.quantity || 1;
 
-      setDtfRecords(prev => ({
-        ...prev,
-        [bipId]: mappedRecords
-      }));
-      setExpandedRow(bipId);
-    } catch (error) {
-      console.error("Erro ao buscar registros DTF:", error);
-      alert("Erro ao buscar verificações DTF: " + error.message);
-    }
-  };
+    // Busca os registros de verificação
+    const records = await db
+      .collection("bipagens")
+      .doc(bipId)
+      .collection("dtf_records")
+      .orderBy("timestamp", "desc")
+      .get();
+
+    const mappedRecords = records.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        timestamp: data.timestamp?.toDate().toLocaleString("pt-BR") || "-",
+        userEmail: data.userEmail || "-",
+        status: data.status || "-",
+        verificationType: data.verificationType || "dtf",
+        userRole: data.userRole || "-",
+        itemNumber: data.itemNumber || 1,
+        totalItems: totalItems
+      };
+    });
+
+    setDtfRecords(prev => ({
+      ...prev,
+      [bipId]: {
+        records: mappedRecords,
+        totalItems: totalItems
+      }
+    }));
+    setExpandedRow(bipId);
+
+  } catch (error) {
+    console.error("Erro ao buscar registros:", error);
+    toast.error("Erro ao buscar verificações: " + error.message);
+  }
+};
 
   const handleToggleRow = async (bipId) => {
     if (expandedRow === bipId) {
@@ -598,19 +888,56 @@ const HistoryPanel = ({ autoLoad = true }) => {
     "Magalu",
   ];
 
+  // Adicione esta função para gerenciar a ordenação
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+
+    // Atualiza os itens com a nova ordenação
+    const sortedItems = [...historyItems].sort((a, b) => {
+      const direction = sortDirection === 'asc' ? 1 : -1;
+      
+      switch (field) {
+        case 'createdAt':
+          return direction * (new Date(a.time) - new Date(b.time));
+        case 'shippingDate':
+          return direction * (new Date(a.shippingDate) - new Date(b.shippingDate));
+        default:
+          return direction * String(a[field] || '').localeCompare(String(b[field] || ''));
+      }
+    });
+
+    setHistoryItems(sortedItems);
+  };
+
   // Modifique a lógica de filtragem
   const filteredItems = React.useMemo(() => {
     return historyItems
       .filter((item) => {
-        // Converte as strings de data para objetos Date para comparação
-        const itemDate = item.createdAt ? new Date(item.createdAt.toDate()) : null;
-        const start = startDate ? new Date(startDate) : null;
-        const end = endDate ? new Date(endDate) : null;
-        end?.setHours(23, 59, 59, 999); // Define para último momento do dia
+        // Filtro por código
+        if (searchTerm && !item.code?.toLowerCase().includes(searchTerm.toLowerCase())) {
+          return false;
+        }
 
-        // Filtro de data
-        if (start && end && itemDate) {
+        // Filtro de data de criação
+        if (startDate && endDate) {
+          const itemDate = new Date(item.time);
+          const start = new Date(startDate);
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+
           if (itemDate < start || itemDate > end) return false;
+        }
+
+        // Filtro de data de envio
+        if (shippingDateFilter) {
+          const filterDate = new Date(shippingDateFilter).toISOString().split('T')[0];
+          const itemShipDate = new Date(item.shippingDate).toISOString().split('T')[0];
+          if (itemShipDate !== filterDate) return false;
         }
 
         // Filtro de marketplace
@@ -618,20 +945,45 @@ const HistoryPanel = ({ autoLoad = true }) => {
           if (item.marketplace !== marketplaceFilter) return false;
         }
 
-        // Filtro por código
-        if (searchTerm && !item.code.toLowerCase().includes(searchTerm.toLowerCase())) {
-          return false;
+        // Filtro de loja
+        if (storeFilter && storeFilter !== "-") {
+          if (item.store !== storeFilter) return false;
+        }
+
+        // Filtro de status
+        if (statusFilter && statusFilter !== "-") {
+          if (item.status !== statusFilter) return false;
         }
 
         return true;
       })
       .sort((a, b) => {
-        // Ordena por data de criação, mais recente primeiro
-        const dateA = a.createdAt?.toDate() || new Date(0);
-        const dateB = b.createdAt?.toDate() || new Date(0);
-        return dateB - dateA;
+        const direction = sortDirection === 'asc' ? 1 : -1;
+        
+        switch (sortField) {
+          case 'code':
+            return direction * (a.code || '').localeCompare(b.code || '');
+          case 'createdAt':
+            return direction * (new Date(a.time || 0) - new Date(b.time || 0));
+          case 'shippingDate':
+            return direction * (new Date(a.shippingDate || 0) - new Date(b.shippingDate || 0));
+          case 'marketplace':
+            return direction * (a.marketplace || '').localeCompare(b.marketplace || '');
+          case 'email':
+            return direction * (a.email || '').localeCompare(b.email || '');
+          case 'userRole':
+            return direction * (a.userRole || '-').localeCompare(b.userRole || '-');
+          case 'status':
+            return direction * (a.status || 'Pendente').localeCompare(b.status || 'Pendente');
+          case 'store':
+            return direction * ((a.store || 'Não identificado')
+              .localeCompare(b.store || 'Não identificado'));
+          default:
+            return 0;
+        }
       });
-  }, [historyItems, startDate, endDate, marketplaceFilter, searchTerm]);
+  }, [historyItems, sortField, sortDirection, startDate, endDate, 
+    marketplaceFilter, searchTerm, shippingDateFilter, statusFilter, storeFilter]);
 
   // Único useEffect para carregamento inicial
   useEffect(() => {
@@ -650,7 +1002,7 @@ const HistoryPanel = ({ autoLoad = true }) => {
             .where("createdAt", ">=", startDateTime)
             .where("createdAt", "<=", endDateTime)
             .orderBy("createdAt", "desc")
-            .limit(pageSize);
+            .limit(PAGE_SIZE);
 
           const snapshot = await query.get();
 
@@ -663,7 +1015,8 @@ const HistoryPanel = ({ autoLoad = true }) => {
             email: doc.data().userEmail || "-",
             userRole: doc.data().userRole || "-",
             shippingDate: doc.data().shippingDate || "-",
-            marketplace: doc.data().marketplace || "-"
+            marketplace: doc.data().marketplace || "-",
+            status: doc.data().status || "Pendente" // Adiciona o status
           }));
 
           console.log("Dados iniciais carregados:", items.length);
@@ -673,7 +1026,7 @@ const HistoryPanel = ({ autoLoad = true }) => {
             setPageCursors([snapshot.docs[snapshot.docs.length - 1]]);
           }
           
-          setHasNextPage(items.length === pageSize);
+          setHasNextPage(items.length === PAGE_SIZE);
           setCurrentPage(1);
 
         } catch (error) {
@@ -713,6 +1066,37 @@ const HistoryPanel = ({ autoLoad = true }) => {
     });
   }, [historyItems, loadingHistory, currentPage, hasNextPage, startDate, endDate, marketplaceFilter, searchTerm]);
 
+  // Modifique a função de filtro de marketplace
+  const handleMarketplaceChange = (e) => {
+    const selectedMarketplace = e.target.value;
+    setMarketplaceFilter(selectedMarketplace);
+    
+    // Reseta o filtro de loja quando mudar o marketplace
+    setStoreFilter('-');
+  };
+
+  // Crie uma função para obter as lojas disponíveis
+  const getAvailableStores = () => {
+    if (marketplaceFilter === '-') {
+      return storeOptions;
+    }
+    return ['-', ...(storesByMarketplace[marketplaceFilter] || [])];
+  };
+
+  // Adicione esta função para limpar os filtros
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setStartDate('');
+    setEndDate('');
+    setMarketplaceFilter('-');
+    setStoreFilter('-');
+    setShippingDateFilter('');
+    setStatusFilter('-');
+    
+    // Recarrega os dados com os filtros limpos
+    loadFilteredData();
+  };
+
   return (
     <>
       <div className="history-filters-container">
@@ -734,6 +1118,7 @@ const HistoryPanel = ({ autoLoad = true }) => {
           <input
             type="date"
             value={startDate}
+            onClick={(e) => e.target.showPicker()}
             onChange={(e) => {
               setStartDate(e.target.value);
               // Chama loadFilteredData se ambas as datas estiverem preenchidas
@@ -749,6 +1134,7 @@ const HistoryPanel = ({ autoLoad = true }) => {
           <input
             type="date"
             value={endDate}
+            onClick={(e) => e.target.showPicker()}
             onChange={(e) => {
               setEndDate(e.target.value);
               // Chama loadFilteredData se ambas as datas estiverem preenchidas
@@ -763,7 +1149,7 @@ const HistoryPanel = ({ autoLoad = true }) => {
           <label>Marketplace:</label>
           <select
             value={marketplaceFilter}
-            onChange={(e) => setMarketplaceFilter(e.target.value)}
+            onChange={handleMarketplaceChange}
           >
             {marketplaceOptions.map((opt) => (
               <option key={opt} value={opt}>
@@ -773,7 +1159,53 @@ const HistoryPanel = ({ autoLoad = true }) => {
           </select>
         </div>
 
+        {/* Adicione o filtro de loja aqui */}
+        <div className="history-filter-group">
+          <label>Loja:</label>
+          <select
+            value={storeFilter}
+            onChange={(e) => setStoreFilter(e.target.value)}
+          >
+            {getAvailableStores().map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="history-filter-group">
+          <label>Data de Envio:</label>
+          <input
+            type="date"
+            value={shippingDateFilter}
+            onClick={(e) => e.target.showPicker()}
+            onChange={(e) => setShippingDateFilter(e.target.value)}
+          />
+        </div>
+
+        <div className="history-filter-group">
+          <label>Status:</label>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            {statusOptions.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div className="history-filters-actions">
+          <button 
+            className="clear-filters-button" 
+            onClick={handleClearFilters}
+          >
+            Limpar Filtros
+          </button>
+          
           {userRole === 'admin' && (
             <>
               <button className="delete-all-button" onClick={handleDeleteAllHistory}>
@@ -788,7 +1220,13 @@ const HistoryPanel = ({ autoLoad = true }) => {
       </div>
 
       <section className="bipagem-table-section">
-        <h2>Histórico de Bipagens</h2>
+        <div className="table-header">
+          <h2>Histórico de Bipagens</h2>
+          <span className="records-count">
+            ({filteredItems.length} {filteredItems.length === 1 ? 'registro encontrado' : 'registros encontrados'})
+          </span>
+        </div>
+        
         {loadingHistory && (
           <div className="loading-indicator">
             <p>Buscando registros...</p>
@@ -798,13 +1236,70 @@ const HistoryPanel = ({ autoLoad = true }) => {
           <table className="bipagem-table">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Código</th>
-                <th>Data/Horário Criação</th>
-                <th>Data de Envio</th>
-                <th>Marketplace</th>
-                <th>Usuário</th>
-                <th>Função</th>
+                <th onClick={() => handleSort('code')} className="sortable-header">
+                  Código
+                  {sortField === 'code' && (
+                    <span className={`sort-arrow ${sortDirection}`}>
+                      {sortDirection === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
+                </th>
+                <th onClick={() => handleSort('createdAt')} className="sortable-header">
+                  Data/Horário Criação
+                  {sortField === 'createdAt' && (
+                    <span className={`sort-arrow ${sortDirection}`}>
+                      {sortDirection === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
+                </th>
+                <th onClick={() => handleSort('shippingDate')} className="sortable-header">
+                  Data de Envio
+                  {sortField === 'shippingDate' && (
+                    <span className={`sort-arrow ${sortDirection}`}>
+                      {sortDirection === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
+                </th>
+                <th onClick={() => handleSort('marketplace')} className="sortable-header">
+                  Marketplace
+                  {sortField === 'marketplace' && (
+                    <span className={`sort-arrow ${sortDirection}`}>
+                      {sortDirection === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
+                </th>
+                <th onClick={() => handleSort('store')} className="sortable-header">
+                  Loja
+                  {sortField === 'store' && (
+                    <span className={`sort-arrow ${sortDirection}`}>
+                      {sortDirection === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
+                </th>
+                <th onClick={() => handleSort('email')} className="sortable-header">
+                  Usuário
+                  {sortField === 'email' && (
+                    <span className={`sort-arrow ${sortDirection}`}>
+                      {sortDirection === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
+                </th>
+                <th onClick={() => handleSort('userRole')} className="sortable-header">
+                  Função
+                  {sortField === 'userRole' && (
+                    <span className={`sort-arrow ${sortDirection}`}>
+                      {sortDirection === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
+                </th>
+                <th onClick={() => handleSort('status')} className="sortable-header">
+                  Status
+                  {sortField === 'status' && (
+                    <span className={`sort-arrow ${sortDirection}`}>
+                      {sortDirection === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
+                </th>
                 <th>Ação</th>
               </tr>
             </thead>
@@ -812,26 +1307,45 @@ const HistoryPanel = ({ autoLoad = true }) => {
               {filteredItems && filteredItems.length > 0 ? (
                 filteredItems.map((item) => (
                   <React.Fragment key={item.uniqueId}>
-                    <tr>
-                      <td>{item.sequentialId}</td>
+                    <tr className={`status-${item.status?.toLowerCase()}`}>
                       <td>
                         {item.code}
                         <button
                           className={`expand-button ${expandedRow === item.id ? 'expanded' : ''}`}
                           onClick={() => handleToggleRow(item.id)}
-                        >▼</button>
+                          aria-label="Expandir detalhes"
+                        >
+                          <svg 
+                            viewBox="0 0 24 24" 
+                            width="16" 
+                            height="16" 
+                            stroke="currentColor" 
+                            strokeWidth="2" 
+                            fill="none"
+                          >
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                          </svg>
+                        </button>
                       </td>
                       <td>{item.time}</td>
                       <td>{item.shippingDate}</td>
                       <td>{item.marketplace}</td>
+                      <td>{item.store || '-'}</td>
                       <td>{item.email}</td>
                       <td>{item.userRole || "-"}</td>
+                      <td>
+                        <span className={`status-badge ${item.status?.toLowerCase()}`}>
+                          {item.status}
+                        </span>
+                      </td>
                       <td>
                         {userRole === 'admin' && (
                           <button 
                             className="delete-button" 
                             onClick={() => handleDeleteHistory(item.id)}
-                          >Excluir</button>
+                          >
+                            Excluir
+                          </button>
                         )}
                       </td>
                     </tr>
@@ -839,23 +1353,31 @@ const HistoryPanel = ({ autoLoad = true }) => {
                       <tr className="dtf-records-row">
                         <td colSpan={8}>
                           <div className="dtf-records-container">
-                            <h4>Verificações DTF</h4>
+                            <h4>
+                              Verificações - Total de Itens: {dtfRecords[item.id]?.totalItems || 1}
+                            </h4>
                             <table className="dtf-records-table">
                               <thead>
                                 <tr>
                                   <th>Data/Hora</th>
-                                  <th>Usuário DTF</th>
+                                  <th>Usuário</th>
+                                  <th>Tipo</th>
+                                  <th>Item</th>
                                   <th>Status</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {dtfRecords[item.id]?.length > 0 ? (
-                                  dtfRecords[item.id].map(record => (
-                                    <tr key={record.id}>
+                                {dtfRecords[item.id]?.records?.length > 0 ? (
+                                  dtfRecords[item.id].records.map(record => (
+                                    <tr key={record.id} className={`verification-${record.verificationType}`}>
                                       <td>{record.timestamp}</td>
                                       <td>{record.userEmail}</td>
+                                      <td>{record.userRole}</td>
                                       <td>
-                                        <span className="verification-status">
+                                        Item {record.itemNumber} de {record.totalItems}
+                                      </td>
+                                      <td>
+                                        <span className={`verification-status ${record.verificationType}`}>
                                           {record.status}
                                         </span>
                                       </td>
@@ -863,7 +1385,7 @@ const HistoryPanel = ({ autoLoad = true }) => {
                                   ))
                                 ) : (
                                   <tr>
-                                    <td colSpan={3}>Este código ainda não foi verificado pela DTF</td>
+                                    <td colSpan={5}>Nenhuma verificação encontrada</td>
                                   </tr>
                                 )}
                               </tbody>
@@ -875,39 +1397,38 @@ const HistoryPanel = ({ autoLoad = true }) => {
                   </React.Fragment>
                 ))
               ) : (
-                <tr><td colSpan={8}>{loadingHistory ? 'Carregando...' : 'Nenhum registro encontrado.'}</td></tr>
+                <tr><td colSpan={8}>
+                  {loadingHistory ? 'Carregando...' : 'Nenhum registro encontrado.'}
+                </td></tr>
               )}
             </tbody>
           </table>
         </div>
-        {pageCursors.length > 0 && hasNextPage && !loadingHistory && (
-          <div
-            style={{
-              marginTop: "20px",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: "10px",
-            }}
-          >
-            <button
-              onClick={handlePrevPage}
-              disabled={currentPage === 1 || loadingHistory}
-            >
-              Anterior
-            </button>
-            <span>Página {currentPage}</span>
-            <button
-              onClick={handleNextPage}
-              disabled={!hasNextPage || loadingHistory}
-            >
-              Próxima
-            </button>
-          </div>
-        )}
       </section>
+
+      <div className="pagination-controls">
+        <button 
+          onClick={handlePrevPage}
+          disabled={currentPage === 1 || loadingHistory}
+          className="pagination-button"
+        >
+          Anterior
+        </button>
+        
+        <span className="page-info">
+          Página {currentPage}
+        </span>
+        
+        <button 
+          onClick={handleNextPage}
+          disabled={!hasNextPage || loadingHistory}
+          className="pagination-button"
+        >
+          Próxima
+        </button>
+      </div>
     </>
   );
 };
 
-export default HistoryPanel;
+export default HistoryPanel

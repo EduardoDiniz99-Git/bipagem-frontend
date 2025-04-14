@@ -1,7 +1,7 @@
 // src/firebase.js
-import firebase from "firebase/compat/app";
-import "firebase/compat/auth";
-import "firebase/compat/firestore";   // <- importe o Firestore
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
+import 'firebase/compat/firestore';   // <- importe o Firestore
 
 const firebaseConfig = {
   apiKey: "AIzaSyAf5x3XpFcd6zrQ83O0NSPucPmEtY3oQjI",
@@ -13,10 +13,47 @@ const firebaseConfig = {
   measurementId: "G-5K119X02TD"
 };
 
-firebase.initializeApp(firebaseConfig);
+// Inicializa Firebase
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
-export const auth = firebase.auth();
-export const db   = firebase.firestore();   // <- exporte a instância do Firestore
-export default firebase;
+// Inicializa Firestore e Auth
+const db = firebase.firestore();
+const auth = firebase.auth();
 
-db.settings({ experimentalForceLongPolling: true });
+// Adicione esta função
+const createRequiredIndexes = async () => {
+  try {
+    // Verifica se o índice já existe
+    const indexes = await firebase.firestore().collection('dtf_records')
+      .listIndexes();
+    
+    const hasRequiredIndex = indexes.some(index => 
+      index.fields.length === 2 &&
+      index.fields[0].fieldPath === 'verificationType' &&
+      index.fields[1].fieldPath === 'timestamp'
+    );
+
+    if (!hasRequiredIndex) {
+      // Cria o índice
+      await firebase.firestore().collection('dtf_records')
+        .createIndex({
+          fields: [
+            { fieldPath: 'verificationType', order: 'ASCENDING' },
+            { fieldPath: 'timestamp', order: 'ASCENDING' }
+          ]
+        });
+      
+      console.log('Índice criado com sucesso!');
+    }
+  } catch (error) {
+    console.error('Erro ao criar índice:', error);
+  }
+};
+
+// Chame a função durante a inicialização
+createRequiredIndexes();
+
+// Exporta os objetos necessários
+export { db, auth, firebase };

@@ -1,0 +1,104 @@
+.top-stat-card.pending-orders {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  color: white;
+}
+
+.top-stat-card.pending-orders:hover {
+  background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%);
+  transform: translateY(-2px);
+}
+
+.top-stat-card.pending-orders .top-stat-value {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Ajustes no container principal dos cards */
+.top-stats-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Cards mais estreitos */
+  gap: 15px; /* Espaçamento menor entre cards */
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+/* Ajustes nos cards individuais */
+.top-stat-card {
+  background: white;
+  border-radius: 8px;
+  padding: 12px 15px; /* Padding menor */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.3s ease;
+  min-width: 180px; /* Largura mínima menor */
+  max-width: 250px; /* Largura máxima menor */
+}
+
+/* Ajustes nos textos dentro dos cards */
+.top-stat-date {
+  font-size: 0.8rem; /* Fonte menor para a data */
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.top-stat-value {
+  font-size: 1.8rem; /* Número um pouco menor */
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 5px 0;
+}
+
+.top-stat-label {
+  font-size: 0.9rem; /* Fonte menor para o rótulo */
+  color: #666;
+  text-align: center;
+}
+
+/* Ajustes nos cards específicos */
+.top-stat-card.sent-orders,
+.top-stat-card.pending-orders {
+  padding: 10px 15px; /* Padding ainda menor para cards de status */
+}
+
+/* Ajustes no grid de marketplaces */
+.marketplace-card {
+  max-width: 220px; /* Cards de marketplace mais estreitos */
+  padding: 12px;
+}
+
+.marketplace-logo img {
+  max-height: 30px; /* Logos menores */
+  width: auto;
+}
+
+.marketplace-info h3 {
+  font-size: 0.9rem; /* Título do marketplace menor */
+  margin: 5px 0;
+}
+
+.marketplace-count {
+  font-size: 1.4rem; /* Número menor */
+}
+
+.marketplace-label {
+  font-size: 0.8rem; /* Rótulo menor */
+}
+
+/* Ajuste na responsividade */
+@media (max-width: 768px) {
+  .top-stats-container {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+  }
+
+  .top-stat-card {
+    min-width: 140px;
+    padding: 10px;
+  }
+
+  .top-stat-value {
+    font-size: 1.5rem;
+  }
+}

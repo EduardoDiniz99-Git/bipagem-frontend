@@ -1,9 +1,10 @@
 // src/components/BipagemPanel.js
 import React, { useState, useEffect } from "react";
-import firebase, { auth, db } from "../firebase";
-import DuplicateModal from "./DuplicateModal"; // Add this import
-import "../styles/DuplicateModal.css"; // Add this import
+import { db, auth, firebase } from "../firebase";
+import DuplicateModal from "./DuplicateModal";
+import "../styles/DuplicateModal.css";
 import { useNavigate } from 'react-router-dom';
+import { identifyStore } from '../utils/storeMapping';
 
 const BipagemPanel = ({ panelType = "Geral", setActiveMenu }) => {
   const navigate = useNavigate();
@@ -121,6 +122,7 @@ const BipagemPanel = ({ panelType = "Geral", setActiveMenu }) => {
           ...data,
           userRole,
           sequentialId: novoId,
+          status: 'Pendente', // Adiciona status inicial
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           userId: auth.currentUser.uid,
           userEmail: auth.currentUser.email
@@ -175,12 +177,18 @@ const BipagemPanel = ({ panelType = "Geral", setActiveMenu }) => {
 
       // Se não existir na base, adiciona à lista local (permite duplicatas locais)
       const timestamp = new Date().toLocaleString("pt-BR");
+
+      // Identifica a loja
+      const storeName = identifyStore(code, marketplace);
+
+      // Adiciona o novo item com a informação da loja
       const newItem = { 
         code,
         time: timestamp,
         shippingDate,
         marketplace,
-        userEmail: auth.currentUser.email
+        userEmail: auth.currentUser.email,
+        store: storeName // Nova informação
       };
       
       setScannedItems((prev) => [newItem, ...prev]);
@@ -208,21 +216,37 @@ const BipagemPanel = ({ panelType = "Geral", setActiveMenu }) => {
     }
 
     try {
+      // Agrupa os itens por código
+      const groupedItems = scannedItems.reduce((acc, item) => {
+        if (!acc[item.code]) {
+          acc[item.code] = {
+            ...item,
+            quantity: 1,
+            items: [{ ...item }],
+            store: item.store // Inclui a loja no agrupamento
+          };
+        } else {
+          acc[item.code].quantity += 1;
+          acc[item.code].items.push({ ...item });
+        }
+        return acc;
+      }, {});
+
       // Verifica duplicatas na base
       const duplicates = [];
       const validItems = [];
 
-      for (const item of scannedItems) {
+      for (const [code, groupData] of Object.entries(groupedItems)) {
         const existingBip = await db
           .collection("bipagens")
-          .where("code", "==", item.code)
+          .where("code", "==", code)
           .get();
 
         if (existingBip.empty) {
-          validItems.push(item);
+          validItems.push(groupData);
         } else {
           duplicates.push({
-            code: item.code,
+            code: code,
             time: existingBip.docs[0].data().createdAt.toDate().toLocaleString("pt-BR"),
             user: existingBip.docs[0].data().userEmail
           });
@@ -238,24 +262,36 @@ const BipagemPanel = ({ panelType = "Geral", setActiveMenu }) => {
         return;
       }
 
-      // Salva apenas itens válidos
+      // Salva os itens agrupados
       const batch = db.batch();
       for (const item of validItems) {
         const newDoc = db.collection("bipagens").doc();
         batch.set(newDoc, {
-          ...item,
+          code: item.code,
           createdAt: new Date(),
+          shippingDate: item.shippingDate,
+          marketplace: item.marketplace,
           userId: auth.currentUser.uid,
           userEmail: auth.currentUser.email,
-          userRole: userRole
+          userRole: userRole,
+          status: 'Pendente',
+          store: item.store, // Adiciona a informação da loja
+          quantity: item.quantity,
+          items: item.items.map(subItem => ({
+            time: subItem.time,
+            createdAt: new Date()
+          })),
+          totalItems: item.quantity
         });
       }
 
       await batch.commit();
 
-      // Mostra estatísticas incluindo duplicatas locais
-      const uniqueCodes = new Set(scannedItems.map(item => item.code));
-      alert(`✅ Bips salvos com sucesso!\n\nCódigos únicos: ${uniqueCodes.size}\nTotal de bipagens: ${scannedItems.length}`);
+      // Mostra estatísticas
+      const uniqueCodes = Object.keys(groupedItems).length;
+      const totalItems = scannedItems.length;
+      
+      alert(`✅ Bips salvos com sucesso!\n\nCódigos únicos: ${uniqueCodes}\nTotal de itens: ${totalItems}`);
       setScannedItems([]);
 
     } catch (err) {
@@ -263,6 +299,33 @@ const BipagemPanel = ({ panelType = "Geral", setActiveMenu }) => {
       alert("❌ Erro ao salvar: " + err.message);
     }
   };
+
+  const handleBipagem = async (data) => {
+    try {
+      await db.runTransaction(async (transaction) => {
+        // Verifica se já existe um registro com o mesmo código
+        const existingDoc = await transaction.get(
+          db.collection("bipagens").where("code", "==", data.code)
+        );
+
+        if (!existingDoc.empty) {
+          throw new Error("Código já registrado");
+        }
+
+        // Cria novo registro
+        const newDocRef = db.collection("bipagens").doc();
+        transaction.set(newDocRef, {
+          ...data,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          userId: auth.currentUser.uid,
+          status: 'Pendente'
+        });
+      });
+    } catch (error) {
+      console.error("Erro na transação:", error);
+      throw error;
+    }
+  }
 
   return (
     <>
@@ -310,31 +373,41 @@ const BipagemPanel = ({ panelType = "Geral", setActiveMenu }) => {
               <tr>
                 <th>#</th>
                 <th>Código</th>
+                <th>Qtd. Itens</th>
                 <th>Horário</th>
                 <th>Data de Envio</th>
                 <th>Marketplace</th>
+                <th>Loja</th> {/* Nova coluna */}
                 <th>Ação</th>
               </tr>
             </thead>
             <tbody>
-              {scannedItems.map((item, idx) => (
-                <tr key={idx}>
-                  {/* A numeração será decrescente, começando do total de itens */}
-                  <td>{scannedItems.length - idx}</td>
-                  <td>{item.code}</td>
-                  <td>{item.time}</td>
-                  <td>{item.shippingDate}</td>
-                  <td>{item.marketplace}</td>
-                  <td>
-                    <button
-                      className="delete-button"
-                      onClick={() => handleDelete(idx)}
-                    >
-                      Excluir
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {scannedItems.map((item, idx) => {
+                const itemCount = scannedItems.filter(i => i.code === item.code).length;
+                const isFirstOccurrence = scannedItems.findIndex(i => i.code === item.code) === idx;
+                
+                if (!isFirstOccurrence) return null;
+
+                return (
+                  <tr key={idx}>
+                    <td>{scannedItems.length - idx}</td>
+                    <td>{item.code}</td>
+                    <td>{itemCount}</td>
+                    <td>{item.time}</td>
+                    <td>{item.shippingDate}</td>
+                    <td>{item.marketplace}</td>
+                    <td>{item.store}</td> {/* Nova coluna */}
+                    <td>
+                      <button
+                        className="delete-button"
+                        onClick={() => handleDelete(idx)}
+                      >
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

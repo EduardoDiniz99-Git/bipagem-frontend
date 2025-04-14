@@ -1,7 +1,7 @@
 // src/Bipagem.js
 import React, { useState, useEffect } from "react";
 import { auth, db } from "./firebase";
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import BipagemPanel from "./components/BipagemPanel";
 import HistoryPanel from "./components/HistoryPanel";
 import DashboardPanel from "./components/DashboardPanel";
@@ -10,11 +10,34 @@ import BipagemDTF from './components/BipagemDTF';
 import BipagemCheckout from './components/BipagemCheckout';
 import "./Bipagem.css";
 
+// Adicione as funções auxiliares de data
+const getFirstDayOfMonth = () => {
+  const date = new Date();
+  return new Date(date.getFullYear(), date.getMonth(), 1)
+    .toISOString()
+    .split('T')[0];
+};
+
+const getLastDayOfMonth = () => {
+  const date = new Date();
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0)
+    .toISOString()
+    .split('T')[0];
+};
+
 const Bipagem = () => {
   const location = useLocation();
-  const [activeMenu, setActiveMenu] = useState(
-    location.state?.activeMenu || "bipagem"
-  );
+  const navigate = useNavigate();
+  const [activeMenu, setActiveMenu] = useState(() => {
+    // Tenta recuperar do location state primeiro
+    if (location.state?.activeMenu) {
+      localStorage.setItem('lastActiveMenu', location.state.activeMenu);
+      return location.state.activeMenu;
+    }
+    // Se não houver no location state, tenta recuperar do localStorage
+    const savedMenu = localStorage.getItem('lastActiveMenu');
+    return savedMenu || "bipagem";
+  });
   const [showProfile, setShowProfile] = useState(false);
   const [profile, setProfile] = useState({ name: "", role: "" });
   const [loadingProfile, setLoadingProfile] = useState(false);
@@ -42,9 +65,11 @@ const Bipagem = () => {
     }
   }, [showProfile]);
 
-  // Add effect to fetch user role
+  // Primeiro, modifique o useEffect que busca o userRole
   useEffect(() => {
     const fetchUserRole = async () => {
+      if (!auth.currentUser) return;
+
       try {
         const userDoc = await db
           .collection("users")
@@ -52,7 +77,9 @@ const Bipagem = () => {
           .get();
         
         if (userDoc.exists) {
-          setUserRole(userDoc.data().role || "");
+          const role = userDoc.data().role;
+          console.log("Role do usuário:", role); // Debug
+          setUserRole(role || "");
         }
       } catch (err) {
         console.error("Erro ao buscar função do usuário:", err);
@@ -62,15 +89,61 @@ const Bipagem = () => {
     fetchUserRole();
   }, []);
 
-  // Function to check if user has access to specific panel
+  // Adicione um useEffect para monitorar mudanças no activeMenu
+  useEffect(() => {
+    localStorage.setItem('lastActiveMenu', activeMenu);
+  }, [activeMenu]);
+
+  // Função corrigida para verificar acesso
   const hasAccess = (panelType) => {
+    console.log("Verificando acesso:", panelType, "Role atual:", userRole);
+    
+    if (userRole === "Emissão") {
+      // Usuários de Emissão só podem acessar estes painéis
+      return ["dashboard", "bipagem", "history"].includes(panelType);
+    }
+    
     switch (panelType) {
       case "dtf":
         return userRole === "DTF" || userRole === "admin";
       case "checkout":
         return userRole === "Checkout" || userRole === "admin";
+      case "usuarios":
+        return userRole === "admin";
+      case "bipagem":
+        return userRole === "Emissão" || userRole === "admin" || !userRole;
       default:
         return true;
+    }
+  };
+
+  // Função modificada para tratar o clique no menu history
+  const handleMenuClick = (menuItem, filters = null) => {
+    setActiveMenu(menuItem);
+    
+    if (menuItem === "history") {
+      // Se não receber filtros específicos, usa os filtros padrão
+      const defaultFilters = {
+        startDate: getFirstDayOfMonth(),
+        endDate: getLastDayOfMonth(),
+        marketplaceFilter: '-',
+        statusFilter: '-',
+        storeFilter: '-',
+        shippingDateFilter: ''
+      };
+
+      const finalFilters = filters || defaultFilters;
+
+      // Salva os filtros no localStorage
+      localStorage.setItem('lastHistoryFilters', JSON.stringify(finalFilters));
+
+      // Navega com os filtros
+      navigate('/', { 
+        state: { 
+          activeMenu: 'history',
+          filters: finalFilters
+        }
+      });
     }
   };
 
@@ -99,26 +172,35 @@ const Bipagem = () => {
         </div>
         <nav className="menu">
           <ul>
+            {/* Sempre mostra Painel */}
             <li
               className={activeMenu === "dashboard" ? "active" : ""}
               onClick={() => setActiveMenu("dashboard")}
             >
               Painel
             </li>
-            <li
-              className={activeMenu === "bipagem" ? "active" : ""}
-              onClick={() => setActiveMenu("bipagem")}
-            >
-              Bipagem
-            </li>
-            {userRole === "DTF" || userRole === "admin" ? (
+
+            {/* Mostra Bipagem apenas para não-Emissão */}
+            {hasAccess("bipagem") && (
+              <li
+                className={activeMenu === "bipagem" ? "active" : ""}
+                onClick={() => setActiveMenu("bipagem")}
+              >
+                Bipagem
+              </li>
+            )}
+
+            {/* Mostra Bipagem DTF apenas para DTF e admin */}
+            {hasAccess("dtf") && (
               <li
                 className={activeMenu === "bipagem-dtf" ? "active" : ""}
                 onClick={() => setActiveMenu("bipagem-dtf")}
               >
                 Bipagem DTF
               </li>
-            ) : null}
+            )}
+
+            {/* Mostra Bipagem Checkout para Checkout, Emissão e admin */}
             {hasAccess("checkout") && (
               <li
                 className={activeMenu === "bipagem-checkout" ? "active" : ""}
@@ -127,18 +209,24 @@ const Bipagem = () => {
                 Bipagem Checkout
               </li>
             )}
+
+            {/* Sempre mostra Consultar Bipagens */}
             <li
               className={activeMenu === "history" ? "active" : ""}
-              onClick={() => setActiveMenu("history")}
+              onClick={() => handleMenuClick("history")}
             >
               Consultar Bipagens
             </li>
-            <li
-              className={activeMenu === "usuarios" ? "active" : ""}
-              onClick={() => setActiveMenu("usuarios")}
-            >
-              Usuários
-            </li>
+
+            {/* Mostra Usuários apenas para admin */}
+            {hasAccess("usuarios") && (
+              <li
+                className={activeMenu === "usuarios" ? "active" : ""}
+                onClick={() => setActiveMenu("usuarios")}
+              >
+                Usuários
+              </li>
+            )}
           </ul>
         </nav>
       </aside>
@@ -149,7 +237,12 @@ const Bipagem = () => {
           {activeMenu === "bipagem" && <BipagemPanel panelType="Geral" setActiveMenu={setActiveMenu} />}
           {activeMenu === "bipagem-dtf" && <BipagemDTF />}
           {activeMenu === "bipagem-checkout" && <BipagemCheckout />}
-          {activeMenu === "history" && <HistoryPanel autoLoad={true} />}
+          {activeMenu === "history" && (
+            <HistoryPanel 
+              autoLoad={true} 
+              initialFilters={JSON.parse(localStorage.getItem('lastHistoryFilters'))}
+            />
+          )}
           {activeMenu === "usuarios" && <Usuarios />}
         </main>
       </div>
